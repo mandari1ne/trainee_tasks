@@ -1,9 +1,9 @@
 import requests
 import time
 
-TOKEN = '*****'
+TOKEN = '****'
 URL = f'https://api.telegram.org/bot{TOKEN}'
-OPERATORS = '+-/*'
+OPERATORS = '+-/*='
 
 
 def get_updates(offset=None):
@@ -35,6 +35,7 @@ def calculator():
     step = 0
     num1 = None
     oper = None
+    result = None
 
     while True:
         updates = get_updates(offset)
@@ -48,65 +49,58 @@ def calculator():
 
                 try:
                     if step == 0:
-                        send_message(chat_id, "Введите первое число:")
+                        send_message(chat_id, 'Введите число: ')
                         step = 1
                     elif step == 1:
                         try:
                             num1 = float(text)
+                            if result is None:
+                                result = num1
                         except ValueError:
-                            send_message(chat_id, "Некорректный ввод!")
-                            send_message(chat_id, "Введите первое число:")
+                            send_message(chat_id, 'Некорректный ввод!')
+                            send_message(chat_id, 'Введите число: ')
 
                             step = 1
-
                             continue
 
-                        send_message(chat_id, 'Введите оператор (+, -, *, /): ')
+                        if oper == '+':
+                            result += num1
+                        elif oper == '-':
+                            result -= num1
+                        elif oper == '*':
+                            result *= num1
+                        elif oper == '/':
+                            if num1 == 0:
+                                raise ZeroDivisionError
+                            result /= num1
+
+                        send_message(chat_id, 'Введите оператор (+, -, *, /, =): ')
                         step = 2
                     elif step == 2:
                         if text not in OPERATORS:
                             raise ValueError('Неверный оператор!')
 
-                        oper = text
-                        send_message(chat_id, 'Введите второе число: ')
-                        step = 3
-
-                    elif step == 3:
-                        try:
-                            num2 = float(text)
-                        except ValueError:
-                            send_message(chat_id, "Некорректный ввод!")
-                            send_message(chat_id, "Введите второе число:")
-
-                            step = 3
-
-                            continue
-
-                        if oper == '+':
-                            result = num1 + num2
-                        elif oper == '-':
-                            result = num1 - num2
-                        elif oper == '*':
-                            result = num1 * num2
-                        elif oper == '/':
-                            if num2 == 0:
-                                raise ZeroDivisionError("Делить на ноль нельзя")
-                            result = num1 / num2
-
-                        send_message(chat_id, f'Результат: {result}')
-                        send_message(chat_id, "Введите первое число:")
-                        step = 1
+                        if text == '=':
+                            send_message(chat_id, f'Результат: {result}')
+                            result = None
+                            oper = None
+                            send_message(chat_id, 'Введите число:')
+                            step = 1
+                        else:
+                            oper = text
+                            send_message(chat_id, 'Введите число:')
+                            step = 1
                 except ValueError as e:
                     send_message(chat_id, f"{e}")
                     send_message(chat_id, "Введите оператор:")
                     step = 2
                 except ZeroDivisionError as e:
                     send_message(chat_id, f"{e}")
-                    send_message(chat_id, "Введите второе число:")
-                    step = 3
+                    send_message(chat_id, "Введите число:")
+                    step = 1
                 except Exception as e:
                     send_message(chat_id, f"Ошибка: {e}")
-                    send_message(chat_id, "Введите первое число:")
+                    send_message(chat_id, "Введите число:")
                     step = 1
 
                 time.sleep(1)
