@@ -1,7 +1,7 @@
 import requests
 import time
 
-TOKEN = '******'
+TOKEN = '*****'
 URL = f'https://api.telegram.org/bot{TOKEN}'
 OPERATORS = '+-/*='
 
@@ -53,32 +53,103 @@ def send_message(chat_id: int, text: str) -> dict | None:
         return None
 
 
-# long polling calculator
-def calculator() -> None:
+# calculator
+def calculator(chat_id, text, step, result, oper) -> tuple:
+    '''
+    :param chat_id: Integer (id of chat for sending message)
+    :param text: String (message text for sending)
+    :param step: Integer (interaction user step)
+    :param result: Float (current user result)
+    :param oper: String (current user operator)
+    :return: Tuple (list of current user state)
+
+    Simple calculator functional.
+    Support operations: addition, subtraction, multiplication, division.
+    Entering "=" displays the current result.
+    '''
+
+    try:
+        if step == 0:
+            send_message(chat_id, 'Введите число: ')
+            step = 1
+        elif step == 1:
+            try:
+                num1 = float(text)
+
+                # if it is first num, save as result
+                if result is None:
+                    result = num1
+            except ValueError:
+                # if incorrect input
+                send_message(chat_id, 'Некорректный ввод!')
+                send_message(chat_id, 'Введите число: ')
+
+                return step, result, oper
+
+            # if operator exists, calculate result
+            if oper == '+':
+                result += num1
+            elif oper == '-':
+                result -= num1
+            elif oper == '*':
+                result *= num1
+            elif oper == '/':
+                if num1 == 0:
+                    raise ZeroDivisionError('На ноль делить нельзя!')
+                result /= num1
+
+            # request for new operator
+            send_message(chat_id, 'Введите оператор (+, -, *, /, =): ')
+            step = 2
+        elif step == 2:
+            # if the operator is correct
+            if text not in OPERATORS:
+                raise ValueError('Неверный оператор!')
+
+            if text == '=':
+                # show result
+                send_message(chat_id, f'Результат: {result}')
+
+                # reset state
+                result = None
+                oper = None
+                send_message(chat_id, 'Введите число:')
+                step = 1
+            else:
+                # save operator
+                oper = text
+
+                # request for new number
+                send_message(chat_id, 'Введите число:')
+                step = 1
+    # if an incorrect operator was entered
+    except ValueError as e:
+        send_message(chat_id, 'Неверный оператор!')
+        send_message(chat_id, 'Введите оператор:')
+
+        return step, result, oper
+    # if zero division was happened
+    except ZeroDivisionError as e:
+        send_message(chat_id, str(e))
+        step = 1
+        send_message(chat_id, 'Введите число:')
+
+    return step, result, oper
+
+
+# start bot
+def start() -> None:
     '''
     :return: None (return nothing)
 
-    Start Telegram-bot with functional of simple calculator
-    with using long polling.
-
-    The bot asks the user for a number or operator step by step,
-    performs calculations and displays the result.
-
-    Support operations: addition, subtraction, multiplication, division.
-    Entering "=" displays the current result.
+    Start Telegram-bot with using long polling.
     '''
 
     # for receiving new message
     offset: int | None = None
 
-    # interaction step
-    step: int = 0
-
-    # current operator
-    oper: str | None = None
-
-    # current result
-    result: float | None = None
+    # all users states
+    user_states: dict[int, dict] = {}
 
     while True:
         # get new updates
@@ -97,75 +168,30 @@ def calculator() -> None:
                 # get message chat id
                 chat_id = message['chat']['id']
 
+                # get current user state
+                state = user_states.get(chat_id, {
+                    'step': 0,
+                    'result': None,
+                    'oper': None
+                })
+
                 try:
-                    if step == 0:
-                        send_message(chat_id, 'Введите число: ')
-                        step = 1
-                    elif step == 1:
-                        try:
-                            num1 = float(text)
+                    # perform calculating for particular user
+                    step, result, oper = calculator(
+                        chat_id, text, state['step'], state['result'], state['oper']
+                    )
 
-                            # if it is first num, save as result
-                            if result is None:
-                                result = num1
-                        except ValueError:
-                            # if incorrect input
-                            send_message(chat_id, 'Некорректный ввод!')
-                            send_message(chat_id, 'Введите число: ')
+                    # save particular user information
+                    user_states[chat_id] = {
+                        'step': step,
+                        'result': result,
+                        'oper': oper
+                    }
 
-                            step = 1
-                            continue
-
-                        # if operator exists, calculate result
-                        if oper == '+':
-                            result += num1
-                        elif oper == '-':
-                            result -= num1
-                        elif oper == '*':
-                            result *= num1
-                        elif oper == '/':
-                            if num1 == 0:
-                                raise ZeroDivisionError('На ноль делить нельзя!')
-                            result /= num1
-
-                        # request for new operator
-                        send_message(chat_id, 'Введите оператор (+, -, *, /, =): ')
-                        step = 2
-                    elif step == 2:
-                        # if the operator is correct
-                        if text not in OPERATORS:
-                            raise ValueError('Неверный оператор!')
-
-                        if text == '=':
-                            # show result
-                            send_message(chat_id, f'Результат: {result}')
-
-                            # reset state
-                            result = None
-                            oper = None
-                            send_message(chat_id, 'Введите число:')
-                            step = 1
-                        else:
-                            # save operator
-                            oper = text
-
-                            # request for new number
-                            send_message(chat_id, 'Введите число:')
-                            step = 1
-                # if an incorrect operator was entered
-                except ValueError as e:
-                    send_message(chat_id, f"{e}")
-                    send_message(chat_id, "Введите оператор:")
-                    step = 2
-                # if zero division was happened
-                except ZeroDivisionError as e:
-                    send_message(chat_id, f"{e}")
-                    send_message(chat_id, "Введите число:")
-                    step = 1
                 # some other exceptions
                 except Exception as e:
-                    send_message(chat_id, f"Ошибка: {e}")
-                    send_message(chat_id, "Введите число:")
+                    send_message(chat_id, f'Ошибка: {e}')
+                    send_message(chat_id, 'Введите число:')
                     step = 1
 
                 # delay before next request
@@ -173,4 +199,4 @@ def calculator() -> None:
 
 
 # start bot
-calculator()
+start()
