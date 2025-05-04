@@ -3,9 +3,9 @@ import time
 import json
 import gspread
 
-BOT_TOKEN = '***'
+BOT_TOKEN = '****'
 URL = f'https://api.telegram.org/bot{BOT_TOKEN}'
-GOOGLE_JSON = r'**.json'
+GOOGLE_JSON = r'***.json'
 SHEET_URL = '**'
 
 gc = gspread.service_account(filename=GOOGLE_JSON)
@@ -80,6 +80,15 @@ def edit_message(chat_id, message_id, text=None, reply_markup=None):
 
 
 def show_main_menu(chat_id):
+    reply_keyboard = {
+        'keyboard': [
+            [{'text': 'Категории'}, {'text': 'Магазины'}],
+        ],
+        'resize_keyboard': True
+    }
+
+    send_message(chat_id, 'Выберите действие из меню ниже:', reply_markup=reply_keyboard)
+
     categories = sorted(list(set([row[8] for row in sheet_data[1:] if len(row) > 8])))
 
     keyboard = {'inline_keyboard': []}
@@ -129,6 +138,14 @@ def handle_update(update):
             send_message(chat_id, 'Добро пожаловать!')
 
             show_main_menu(chat_id)
+
+        elif text == 'Категории':
+            show_main_menu(chat_id)
+
+        elif text == 'Магазины':
+            keyboard = get_shop_keyboard()
+
+            send_message(chat_id, 'Выберите: ', reply_markup=keyboard)
 
     elif 'callback_query' in update:
         callback = update['callback_query']
