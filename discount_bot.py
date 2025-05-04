@@ -3,10 +3,10 @@ import time
 import json
 import gspread
 
-BOT_TOKEN = '***'
+BOT_TOKEN = '****'
 URL = f'https://api.telegram.org/bot{BOT_TOKEN}'
-GOOGLE_JSON = r'****.json'
-SHEET_URL = '***'
+GOOGLE_JSON = r'***.json'
+SHEET_URL = '**'
 
 gc = gspread.service_account(filename=GOOGLE_JSON)
 sh = gc.open_by_url(SHEET_URL)
@@ -79,31 +79,35 @@ def edit_message(chat_id, message_id, text=None, reply_markup=None):
         return None
 
 
+def show_main_menu(chat_id):
+    categories = sorted(list(set([row[8] for row in sheet_data[1:] if len(row) > 8])))
+
+    keyboard = {'inline_keyboard': []}
+
+    keyboard['inline_keyboard'].append([
+        {'text': 'Магазины', 'callback_data': 'show_shops'}
+    ])
+
+    for category in categories:
+        button = {'text': category, 'callback_data': f'category_{category}'}
+        keyboard['inline_keyboard'].append([button])
+
+    keyboard['inline_keyboard'].append([
+        {'text': 'Таблица со всеми промокодами', 'url': SHEET_URL}
+    ])
+
+    send_message(chat_id, 'Выберите категорию, в которой хотите получить скидку:', keyboard)
+
+
 def handle_update(update):
     if 'message' in update:
         chat_id = update['message']['chat']['id']
         text = update['message'].get('text', '')
 
-        categories = sorted(list(set([row[8] for row in sheet_data[1:] if len(row) > 8])))
-
         if text == '/start':
             send_message(chat_id, 'Добро пожаловать!')
 
-            keyboard = {'inline_keyboard': []}
-
-            keyboard['inline_keyboard'].append([
-                {'text': 'Магазины', 'callback_data': 'show_shops'}
-            ])
-
-            keyboard['inline_keyboard'].append([
-                {'text': 'Промокоды', 'callback_data': 'promo_code'}
-            ])
-
-            for category in categories:
-                button = {'text': category, 'callback_data': f'category_{category}'}
-                keyboard['inline_keyboard'].append([button])
-
-            send_message(chat_id, 'Выберите категорию, в которой хотите получить скидку:', keyboard)
+            show_main_menu(chat_id)
 
     elif 'callback_query' in update:
         callback = update['callback_query']
@@ -113,7 +117,9 @@ def handle_update(update):
 
         edit_message(chat_id, message_id, text='Рады вас видеть!')
 
-        if data == 'show_shops':
+        if data == 'home':
+            show_main_menu(chat_id)
+        elif data == 'show_shops':
             keyboard = {'inline_keyboard': []}
 
             shops = sorted(list(set([row[0] for row in sheet_data[1:]])))
