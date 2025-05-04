@@ -3,10 +3,10 @@ import time
 import json
 import gspread
 
-BOT_TOKEN = '****'
+BOT_TOKEN = '***'
 URL = f'https://api.telegram.org/bot{BOT_TOKEN}'
-GOOGLE_JSON = r'******.json'
-SHEET_URL = '****'
+GOOGLE_JSON = r'****.json'
+SHEET_URL = '***'
 
 gc = gspread.service_account(filename=GOOGLE_JSON)
 sh = gc.open_by_url(SHEET_URL)
@@ -14,6 +14,7 @@ wrksht = sh.get_worksheet(0)
 sheet_data = wrksht.get_all_values()
 
 offset = None
+
 
 # for checking user messages
 def get_updates(offset: int = None) -> dict:
@@ -37,6 +38,7 @@ def get_updates(offset: int = None) -> dict:
         # in case of error
         return {'result': []}
 
+
 def send_message(chat_id, text, reply_markup=None):
     try:
         # request params
@@ -55,12 +57,34 @@ def send_message(chat_id, text, reply_markup=None):
         return None
 
 
+def edit_message(chat_id, message_id, text=None, reply_markup=None):
+    try:
+        params = {'chat_id': chat_id, 'message_id': message_id}
+
+        if text:
+            params['text'] = text
+            method = '/editMessageText'
+        else:
+            method = '/editMessageReplyMarkup'
+
+        if reply_markup:
+            params['reply_markup'] = json.dumps(reply_markup)
+
+        resp = requests.get(URL + method, params=params)
+
+        resp.raise_for_status()
+
+        return resp.json()
+    except requests.exceptions.RequestException:
+        return None
+
+
 def handle_update(update):
     if 'message' in update:
         chat_id = update['message']['chat']['id']
         text = update['message'].get('text', '')
 
-        categories = list(set([row[8] for row in sheet_data[1:] if len(row) > 8]))
+        categories = sorted(list(set([row[8] for row in sheet_data[1:] if len(row) > 8])))
 
         if text == '/start':
             send_message(chat_id, 'Добро пожаловать!')
@@ -87,12 +111,12 @@ def handle_update(update):
         chat_id = callback['message']['chat']['id']
         message_id = callback['message']['message_id']
 
-        send_message(chat_id, 'Рады вас видеть!')
+        edit_message(chat_id, message_id, text='Рады вас видеть!')
 
         if data == 'show_shops':
             keyboard = {'inline_keyboard': []}
 
-            shops = list(set([row[0] for row in sheet_data[1:]]))
+            shops = sorted(list(set([row[0] for row in sheet_data[1:]])))
             row = []
             for i, shop in enumerate(shops, 1):
                 button = {'text': shop, 'callback_data': f'shop_{shop}'}
@@ -105,7 +129,10 @@ def handle_update(update):
             if row:
                 keyboard['inline_keyboard'].append(row)
 
-            send_message(chat_id, 'Выбирайте:', keyboard)
+            home = {'text': 'В меню', 'callback_data': f'home'}
+            keyboard['inline_keyboard'].append([home])
+
+            edit_message(chat_id, message_id, text='Выбирайте:', reply_markup=keyboard)
 
 
 while True:
