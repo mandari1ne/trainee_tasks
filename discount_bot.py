@@ -3,7 +3,7 @@ import time
 import json
 import gspread
 
-BOT_TOKEN = '**'
+BOT_TOKEN = '***'
 URL = f'https://api.telegram.org/bot{BOT_TOKEN}'
 GOOGLE_JSON = r'**.json'
 SHEET_URL = '**'
@@ -98,6 +98,27 @@ def show_main_menu(chat_id):
 
     send_message(chat_id, 'Выберите категорию, в которой хотите получить скидку:', keyboard)
 
+def get_shop_keyboard():
+    keyboard = {'inline_keyboard': []}
+
+    shops = sorted(list(set([row[0] for row in sheet_data[1:]])))
+    row = []
+    for i, shop in enumerate(shops, 1):
+        button = {'text': shop, 'callback_data': f'shop_{shop}'}
+        row.append(button)
+
+        if i % 3 == 0:
+            keyboard['inline_keyboard'].append(row)
+            row = []
+
+    if row:
+        keyboard['inline_keyboard'].append(row)
+
+    home = {'text': 'В меню', 'callback_data': f'home'}
+    keyboard['inline_keyboard'].append([home])
+
+    return keyboard
+
 
 def handle_update(update):
     if 'message' in update:
@@ -119,25 +140,9 @@ def handle_update(update):
 
         if data == 'home':
             show_main_menu(chat_id)
+
         elif data == 'show_shops':
-            keyboard = {'inline_keyboard': []}
-
-            shops = sorted(list(set([row[0] for row in sheet_data[1:]])))
-            row = []
-            for i, shop in enumerate(shops, 1):
-                button = {'text': shop, 'callback_data': f'shop_{shop}'}
-                row.append(button)
-
-                if i % 3 == 0:
-                    keyboard['inline_keyboard'].append(row)
-                    row = []
-
-            if row:
-                keyboard['inline_keyboard'].append(row)
-
-            home = {'text': 'В меню', 'callback_data': f'home'}
-            keyboard['inline_keyboard'].append([home])
-
+            keyboard = get_shop_keyboard()
             edit_message(chat_id, message_id, text='Выбирайте:', reply_markup=keyboard)
 
         elif data.startswith('category_'):
@@ -192,7 +197,15 @@ def handle_update(update):
                     f'Условия акции: {discount[7]}')
 
             send_message(chat_id, text)
-            keyboard = {'inline_keyboard': [[{'text': 'В меню', 'callback_data': 'home'}]]}
+
+            keyboard = {'inline_keyboard': []}
+
+            home = {'text': 'В меню', 'callback_data': 'home'}
+            keyboard['inline_keyboard'].append([home])
+
+            tg_channel = {'text': 'Подпишитесь на канал', 'url': 'https://t.me/skidkinezagorami'}
+            keyboard['inline_keyboard'].append([tg_channel])
+
             send_message(chat_id, 'Куда отправимся за скидками дальше?', reply_markup=keyboard)
 
 
