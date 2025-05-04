@@ -139,6 +139,7 @@ def handle_update(update):
             keyboard['inline_keyboard'].append([home])
 
             edit_message(chat_id, message_id, text='Выбирайте:', reply_markup=keyboard)
+
         elif data.startswith('category_'):
             selected_category = data.replace('category_', '')
 
@@ -150,10 +151,49 @@ def handle_update(update):
                 button = {'text': shop, 'callback_data': f'shop_{shop}'}
                 keyboard['inline_keyboard'].append([button])
 
-            home = {'text': 'В меню', 'callback_data': f'home'}
+            home = {'text': 'В меню', 'callback_data': 'home'}
             keyboard['inline_keyboard'].append([home])
 
             edit_message(chat_id, message_id, text='Выбирайте:', reply_markup=keyboard)
+
+        elif data.startswith('shop_'):
+            selected_shop = data.replace('shop_', '')
+
+            filtered_rows = [row for row in sheet_data if row[0] == selected_shop]
+            proms = [row[3] for row in filtered_rows]
+
+            keyboard = {'inline_keyboard': []}
+            for prom in proms:
+                button = {'text': prom, 'callback_data': f'prom_{prom}'}
+                keyboard['inline_keyboard'].append([button])
+
+            home = {'text': 'В меню', 'callback_data': 'home'}
+            keyboard['inline_keyboard'].append([home])
+
+            edit_message(chat_id, message_id, text='Выбирайте:', reply_markup=keyboard)
+
+        elif data.startswith('prom_'):
+            selected_prom = data.replace('prom_', '')
+
+            for row in sheet_data:
+                if row[3] == selected_prom:
+                    discount = row
+                    break
+
+            send_message(chat_id, 'Чтобы воспользоваться акцией необходимо: перейти по ссылке '
+                                  'или скопировать промокод и ввести его на сайте или '
+                                  'приложении магазина')
+
+            text = (f'Название: {discount[0]}\n'
+                    f'Скидка: {discount[3]}\n'
+                    f'Ссылка: {discount[4]}\n'
+                    f'Действует до: {discount[5]}\n'
+                    f'Регион: {discount[6]}\n'
+                    f'Условия акции: {discount[7]}')
+
+            send_message(chat_id, text)
+            keyboard = {'inline_keyboard': [[{'text': 'В меню', 'callback_data': 'home'}]]}
+            send_message(chat_id, 'Куда отправимся за скидками дальше?', reply_markup=keyboard)
 
 
 while True:
