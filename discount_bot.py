@@ -6,14 +6,12 @@ import gspread
 BOT_TOKEN = '****'
 URL = f'https://api.telegram.org/bot{BOT_TOKEN}'
 GOOGLE_JSON = r'***.json'
-SHEET_URL = '**'
+SHEET_URL = '***'
 
 gc = gspread.service_account(filename=GOOGLE_JSON)
 sh = gc.open_by_url(SHEET_URL)
 wrksht = sh.get_worksheet(0)
 sheet_data = wrksht.get_all_values()
-
-offset = None
 
 
 # for checking user messages
@@ -225,11 +223,35 @@ def handle_update(update):
 
             send_message(chat_id, 'Куда отправимся за скидками дальше?', reply_markup=keyboard)
 
+def start() -> None:
+    offset = None
 
-while True:
-    updates = get_updates(offset)
-    if 'result' in updates:
-        for update in updates['result']:
-            offset = update['update_id'] + 1
-            handle_update(update)
-    time.sleep(1)
+    # all users states
+    user_states: dict[int, dict] = {}
+
+    while True:
+        updates = get_updates(offset)
+
+        if 'result' in updates:
+            for update in updates['result']:
+                offset = update['update_id'] + 1
+
+                chat_id = (
+                        update.get('message', {})
+                        .get('chat', {})
+                        .get('id') or
+                        update.get('callback_query', {})
+                        .get('message', {})
+                        .get('chat', {})
+                        .get('id')
+                )
+
+                # здесь можно управлять состоянием пользователя через user_states[chat_id], если надо
+                try:
+                    handle_update(update)
+                except Exception as e:
+                    send_message(chat_id, f'Произошла ошибка: {e}')
+
+            time.sleep(1)
+
+start()
