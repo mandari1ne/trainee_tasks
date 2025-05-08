@@ -162,6 +162,28 @@ def show_main_menu(chat_id, shops):
     send_message(chat_id, 'Выберите категорию, в которой хотите получить скидку', keyboard)
 
 
+def get_shop_keyboard(shops):
+    keyboard = {'inline_keyboard': []}
+
+    unique_shops = sorted(set(shop for shop_list in shops.values() for shop in shop_list))
+
+    row = []
+    for i, shop in enumerate(unique_shops, 1):
+        button = {'text': shop, 'callback_data': f'shop_{shop}'}
+        row.append(button)
+
+        if i % 3 == 0:
+            keyboard['inline_keyboard'].append(row)
+            row = []
+
+    if row:
+        keyboard['inline_keyboard'].append(row)
+
+    keyboard['inline_keyboard'].append([{'text': 'В меню', 'callback_data': 'home'}])
+
+    return keyboard
+
+
 def handle_update(update):
     shops = get_info_from_sheet()
 
@@ -172,6 +194,14 @@ def handle_update(update):
         if text == '/start':
             send_message(chat_id, 'Добро пожаловать')
             show_main_menu(chat_id, shops)
+
+        elif text == 'Категории':
+            show_main_menu(chat_id, shops)
+
+        elif text == 'Магазины':
+            keyboard = get_shop_keyboard(shops)
+
+            send_message(chat_id, 'Выберите: ', reply_markup=keyboard)
 
 
 # for starting bot
