@@ -39,6 +39,7 @@ def get_info_from_sheet() -> dict:
         print(f'{e}: Не удается получить данные из таблицы')
         return {}
 
+
 # for checking user messages
 def get_updates(offset: int = None) -> dict:
     '''
@@ -130,3 +131,93 @@ def edit_message(chat_id: int, message_id: int, text: str = None, reply_markup: 
     except requests.exceptions.RequestException:
         # in case of error
         return None
+
+
+def show_main_menu(chat_id, shops):
+    reply_keyboard = {
+        'keyboard': [
+            [{'text': 'Категории'}, {'text': 'Магазины'}],
+        ],
+        'resize_keyboard': True
+    }
+
+    send_message(chat_id, 'Выберите действия из меню ниже', reply_markup=reply_keyboard)
+
+    keyboard = {'inline_keyboard': []}
+
+    keyboard['inline_keyboard'].append([
+        {'text': 'Магазины', 'callback_data': 'show_shops'}
+    ])
+
+    categories = shops.keys()
+
+    for category in categories:
+        button = {'text': category, 'callback_data': f'category_{category}'}
+        keyboard['inline_keyboard'].append([button])
+
+    keyboard['inline_keyboard'].append([
+        {'text': 'Таблица со всеми промокодами', 'url': SHEET_URL}
+    ])
+
+    send_message(chat_id, 'Выберите категорию, в которой хотите получить скидку', keyboard)
+
+
+def handle_update(update):
+    shops = get_info_from_sheet()
+
+    if 'message' in update:
+        chat_id = update['message']['chat']['id']
+        text = update['message'].get('text', '')
+
+        if text == '/start':
+            send_message(chat_id, 'Добро пожаловать')
+            show_main_menu(chat_id, shops)
+
+
+# for starting bot
+def start() -> None:
+    '''
+    :return: None (return nothing)
+
+    For starting bot.
+    '''
+
+    # for receiving new message
+    offset: int | None = None
+
+    # all users states
+    user_states: dict[int, dict] = {}
+
+    while True:
+        # get new update
+        updates = get_updates(offset)
+
+        # if there is some update
+        if 'result' in updates:
+            for update in updates['result']:
+                # save offset
+                offset = update['update_id'] + 1
+
+                # get user state
+                chat_id = (
+                        update.get('message', {})
+                        .get('chat', {})
+                        .get('id') or
+                        update.get('callback_query', {})
+                        .get('message', {})
+                        .get('chat', {})
+                        .get('id')
+                )
+
+                try:
+                    # for message analys
+                    handle_update(update)
+                except Exception as e:
+                    # in case of error
+                    send_message(chat_id, f'Произошла ошибка: {e}')
+
+            time.sleep(1)
+
+
+# start bot
+start()
