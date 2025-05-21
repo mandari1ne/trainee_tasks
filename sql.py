@@ -40,49 +40,68 @@ with con:
 
     con.commit()
 
-with open('airport-codes_json (1).json', 'r') as file:
-    data = json.load(file)
+# with open('airport-codes_json (1).json', 'r') as file:
+#     data = json.load(file)
+#
+#     with con:
+#         for airports in data:
+#             cur = con.cursor()
+#
+#             cur.execute(
+#                 '''INSERT INTO airports (municipality, name, type) VALUES(?, ?, ?)''',
+#                 (
+#                     airports.get('municipality'),
+#                     airports.get('name'),
+#                     airports.get('type'),
+#                 )
+#             )
+#
+#             airport_id = cur.lastrowid
+#
+#             cur.execute(
+#                 '''INSERT INTO geolocation (
+#                         continent, coordinates, elevation_ft, airport_id
+#                     ) VALUES(?, ?, ?, ?)''',
+#                 (
+#                     airports.get('continent'),
+#                     airports.get('coordinates'),
+#                     airports.get('elevation_ft'),
+#                     airport_id
+#                 )
+#             )
+#
+#             cur.execute(
+#                 '''INSERT INTO code_list (
+#                         iso_country, iso_region, local_code, gps_code, iata_code, ident, airport_id
+#                     ) VALUES(?, ?, ?, ?, ?, ?, ?)''',
+#                 (
+#                     airports.get('iso_country'),
+#                     airports.get('iso_region'),
+#                     airports.get('local_code'),
+#                     airports.get('gps_code'),
+#                     airports.get('iata_code'),
+#                     airports.get('ident'),
+#                     airport_id
+#                 )
+#             )
+#
+#         con.commit()
 
+def get_heliport():
     with con:
-        for airports in data:
-            cur = con.cursor()
+        cur = con.cursor()
 
-            cur.execute(
-                '''INSERT INTO airports (municipality, name, type) VALUES(?, ?, ?)''',
-                (
-                    airports.get('municipality'),
-                    airports.get('name'),
-                    airports.get('type'),
-                )
-            )
+        cur.execute('''
+            SELECT municipality, name FROM airports WHERE type = 'heliport'
+        ''')
 
-            airport_id = cur.lastrowid
+        print('Вертолетные аэропорты:')
+        count = 0
+        for row in cur.fetchall():
+            print(row[0], ' - ', row[1])
+            count += 1
 
-            cur.execute(
-                '''INSERT INTO geolocation (
-                        continent, coordinates, elevation_ft, airport_id
-                    ) VALUES(?, ?, ?, ?)''',
-                (
-                    airports.get('continent'),
-                    airports.get('coordinates'),
-                    airports.get('elevation_ft'),
-                    airport_id
-                )
-            )
+        if count == 0:
+            print('Информация не найдена')
 
-            cur.execute(
-                '''INSERT INTO code_list (
-                        iso_country, iso_region, local_code, gps_code, iata_code, ident, airport_id
-                    ) VALUES(?, ?, ?, ?, ?, ?, ?)''',
-                (
-                    airports.get('iso_country'),
-                    airports.get('iso_region'),
-                    airports.get('local_code'),
-                    airports.get('gps_code'),
-                    airports.get('iata_code'),
-                    airports.get('ident'),
-                    airport_id
-                )
-            )
-
-        con.commit()
+get_heliport()
