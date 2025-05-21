@@ -17,7 +17,8 @@ with con:
             CREATE TABLE IF NOT EXISTS geolocation (
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 continent VARCHAR(50) NOT NULL,
-                coordinates VARCHAR(50) NOT NULL,
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL,
                 elevation_ft VARCHAR(50),
                 airport_id INTEGER NOT NULL,
                 FOREIGN KEY (airport_id) REFERENCES airports(id) ON DELETE CASCADE 
@@ -58,13 +59,21 @@ with con:
 #
 #             airport_id = cur.lastrowid
 #
+#             coords = airports.get('coordinates', '').split(',')
+#             if len(coords) == 2:
+#                 longitude = float(coords[0].strip())
+#                 latitude = float(coords[1].strip())
+#             else:
+#                 longitude = latitude = 0.0
+#
 #             cur.execute(
 #                 '''INSERT INTO geolocation (
-#                         continent, coordinates, elevation_ft, airport_id
-#                     ) VALUES(?, ?, ?, ?)''',
+#                         continent, latitude, longitude, elevation_ft, airport_id
+#                     ) VALUES(?, ?, ?, ?, ?)''',
 #                 (
 #                     airports.get('continent'),
-#                     airports.get('coordinates'),
+#                     latitude,
+#                     longitude,
 #                     airports.get('elevation_ft'),
 #                     airport_id
 #                 )
@@ -104,4 +113,46 @@ def get_heliport():
         if count == 0:
             print('Информация не найдена')
 
-get_heliport()
+# get_heliport()
+
+def get_airport_by_geolocation(x1, y1, x2, y2, type=None):
+    with con:
+        cur = con.cursor()
+
+        min_x = min(x1, x2)
+        max_x = max(x1, x2)
+        min_y = min(y1, y2)
+        max_y = max(y1, y2)
+
+        if type:
+            cur.execute('''
+                SELECT a.municipality, a.name 
+                FROM airports a
+                JOIN geolocation g 
+                ON a.id = g.airport_id
+                WHERE g.longitude BETWEEN ? AND ?
+                  AND g.latitude BETWEEN ? AND ?
+                  AND a.type = ?
+            ''',
+            (min_x, max_x, min_y, max_y, type))
+        else:
+            cur.execute('''
+                SELECT a.municipality, a.name 
+                FROM airports a
+                JOIN geolocation g ON a.id = g.airport_id
+                WHERE g.longitude BETWEEN ? AND ?
+                  AND g.latitude BETWEEN ? AND ?
+            ''',
+            (min_x, max_x, min_y, max_y))
+
+        print(f'Аэропорты в диапазоне ({x1, y1}) - ({x2, y2}):')
+        airports = cur.fetchall()
+
+        if airports:
+            for municipality, name in airports:
+                print(f"{municipality} - {name}")
+        else:
+            print('Информация не найдена')
+
+
+# get_airport_by_geolocation(-74.93360137939453, 40.07080078125, -101.473911, 38.704022, 'heliport')
