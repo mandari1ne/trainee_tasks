@@ -209,4 +209,62 @@ def insert_new_data(data):
 #                  'local_code': 'CHECK', 'gps_code': 'CHECK', 'iata_code': 'CHECK',
 #                  'ident': 'CHECK'})
 
+def insert_new_data_with_printing(data):
+    required_fields = ['name', 'type', 'iso_country', 'iso_region', 'coordinates']
 
+    if isinstance(data, dict):
+        data = [data]
+
+    with con:
+        cur = con.cursor()
+
+        for airport in data:
+            if not all(field in airport and airport[field] for field in required_fields):
+                print('Информация не записана')
+                continue
+
+            longitude, latitude = map(float, airport['coordinates'].split(','))
+
+            cur.execute('''
+                INSERT INTO airports (municipality, name, type)
+                VALUES (?, ?, ?)
+            ''',
+            (airport.get('municipality'), airport['name'], airport['type'])
+            )
+            airport_id = cur.lastrowid
+
+            cur.execute('''
+                INSERT INTO geolocation (continent, longitude, latitude, elevation_ft, airport_id)
+                VALUES (?, ?, ?, ?, ?)
+            ''',
+            (airport.get('continent'), longitude, latitude, airport.get('elevation_ft'), airport_id)
+            )
+
+            cur.execute('''
+                INSERT INTO code_list (
+                iso_country, iso_region, local_code, gps_code, iata_code, ident, airport_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                airport['iso_country'],
+                airport['iso_region'],
+                airport.get('local_code'),
+                airport.get('gps_code'),
+                airport.get('iata_code'),
+                airport.get('ident'),
+                airport_id
+            ))
+
+            print(airport['municipality'], ' - ' ,airport['name'], ' - ' , airport['type'], ' - ' ,
+                  airport['continent'], ' - ' , longitude, latitude, ' - ' , airport['elevation_ft'],
+                  ' - ' , airport['iso_country'], ' - ' , airport['iso_region'], ' - ' ,
+                  airport.get('local_code'), ' - ' ,
+                  airport.get('gps_code'), ' - ' , airport.get('iata_code'), ' - ' ,
+                  airport.get('ident'),
+                  )
+
+# insert_new_data_with_printing({'municipality': 'CHECK1', 'name': 'CHECK1', 'type': 'CHECK1',
+#                  'continent': 'CHECK1', 'coordinates': '0.0, 0.0', 'elevation_ft': 'CHECK1',
+#                  'iso_country': 'CHECK1', 'iso_region': 'CHECK1',
+#                  'local_code': 'CHECK1', 'gps_code': 'CHECK1', 'iata_code': 'CHECK1',
+#                  'ident': 'CHECK1'})
