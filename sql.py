@@ -156,3 +156,57 @@ def get_airport_by_geolocation(x1, y1, x2, y2, type=None):
 
 
 # get_airport_by_geolocation(-74.93360137939453, 40.07080078125, -101.473911, 38.704022, 'heliport')
+
+def insert_new_data(data):
+    required_fields = ['name', 'type', 'iso_country', 'iso_region', 'coordinates']
+
+    if isinstance(data, dict):
+        data = [data]
+
+    with con:
+        cur = con.cursor()
+
+        for airport in data:
+            if not all(field in airport and airport[field] for field in required_fields):
+                print('Информация не записана')
+                continue
+
+            longitude, latitude = map(float, airport['coordinates'].split(','))
+
+            cur.execute('''
+                INSERT INTO airports (municipality, name, type)
+                VALUES (?, ?, ?)
+            ''',
+            (airport.get('municipality'), airport['name'], airport['type'])
+            )
+            airport_id = cur.lastrowid
+
+            cur.execute('''
+                INSERT INTO geolocation (continent, longitude, latitude, elevation_ft, airport_id)
+                VALUES (?, ?, ?, ?, ?)
+            ''',
+            (airport.get('continent'), longitude, latitude, airport.get('elevation_ft'), airport_id)
+            )
+
+            cur.execute('''
+                INSERT INTO code_list (
+                iso_country, iso_region, local_code, gps_code, iata_code, ident, airport_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                airport['iso_country'],
+                airport['iso_region'],
+                airport.get('local_code'),
+                airport.get('gps_code'),
+                airport.get('iata_code'),
+                airport.get('ident'),
+                airport_id
+            ))
+
+# insert_new_data({'municipality': 'CHECK', 'name': 'CHECK', 'type': 'CHECK',
+#                  'continent': 'CHECK', 'coordinates': '0.0, 0.0', 'elevation_ft': 'CHECK',
+#                  'iso_country': 'CHECK', 'iso_region': 'CHECK',
+#                  'local_code': 'CHECK', 'gps_code': 'CHECK', 'iata_code': 'CHECK',
+#                  'ident': 'CHECK'})
+
+
