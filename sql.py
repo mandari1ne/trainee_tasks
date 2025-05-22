@@ -268,3 +268,83 @@ def insert_new_data_with_printing(data):
 #                  'iso_country': 'CHECK1', 'iso_region': 'CHECK1',
 #                  'local_code': 'CHECK1', 'gps_code': 'CHECK1', 'iata_code': 'CHECK1',
 #                  'ident': 'CHECK1'})
+
+def get_airports_by_params(params):
+    with con:
+        cur = con.cursor()
+
+        query = '''
+                    SELECT a.municipality, a.name, a.type, 
+                           g.longitude, g.latitude, 
+                           c.iso_country, c.iso_region
+                    FROM airports a
+                    JOIN geolocation g ON a.id = g.airport_id
+                    JOIN code_list c ON a.id = c.airport_id
+                    WHERE 1=1
+                '''
+
+        param = []
+
+        field_mapping = {
+            'type': ('a.type', '='),
+            'iso_country': ('c.iso_country', '='),
+            'iso_region': ('c.iso_region', '='),
+            'local_code': ('c.local_code', '='),
+            'gps_code': ('c.gps_code', '='),
+            'iata_code': ('c.iata_code', '='),
+            'ident': ('c.ident', '='),
+            'name': ('a.name', 'LIKE'),
+            'municipality': ('a.municipality', 'LIKE')
+        }
+
+        for field, value in params.items():
+            if field in field_mapping:
+                column, operator = field_mapping[field]
+
+                if operator == 'LIKE':
+                    query += f' AND {column} LIKE ?'
+                    param.append(f"%{value}%")
+                else:
+                    query += f' AND {column} {operator} ?'
+                    param.append(value)
+
+        while True:
+            print('Хочешь ввести диапазаон коодинат? (y/n)')
+            res = input().lower()
+
+            if res == 'y':
+                x1 = float(input('x1: '))
+                y1 = float(input('y1: '))
+                x2 = float(input('x2: '))
+                y2 = float(input('y2: '))
+
+                min_x = min(x1, x2)
+                max_x = max(x1, x2)
+                min_y = min(y1, y2)
+                max_y = max(y1, y2)
+
+                query += ' AND g.longitude BETWEEN ? AND ? AND g.latitude BETWEEN ? AND ?'
+                param.append(min_x)
+                param.append(max_x)
+                param.append(min_y)
+                param.append(max_y)
+
+                break
+
+            elif res == 'n':
+                break
+
+            else:
+                print('Неверный ввод!')
+
+        cur.execute(query, param)
+        airports = cur.fetchall()
+
+        if not airports:
+            print("\nАэропорты не найдены")
+        else:
+            for airport in airports:
+                print(airport)
+
+# get_airports_by_params({'name': 'Total Rf Heliport', 'iso_country': 'US'})
+# get_airports_by_params({'ident': '00A', 'iso_country': 'US', 'gps_code': '00A'})
