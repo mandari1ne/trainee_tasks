@@ -3,6 +3,7 @@ import json
 
 con = sl.connect('airport.db')
 
+# creating tables
 with con:
     con.execute("""
         CREATE TABLE IF NOT EXISTS airports (
@@ -41,62 +42,74 @@ with con:
 
     con.commit()
 
-# with open('airport-codes_json (1).json', 'r') as file:
-#     data = json.load(file)
-#
-#     with con:
-#         for airports in data:
-#             cur = con.cursor()
-#
-#             cur.execute(
-#                 '''INSERT INTO airports (municipality, name, type) VALUES(?, ?, ?)''',
-#                 (
-#                     airports.get('municipality'),
-#                     airports.get('name'),
-#                     airports.get('type'),
-#                 )
-#             )
-#
-#             airport_id = cur.lastrowid
-#
-#             coords = airports.get('coordinates', '').split(',')
-#             if len(coords) == 2:
-#                 longitude = float(coords[0].strip())
-#                 latitude = float(coords[1].strip())
-#             else:
-#                 longitude = latitude = 0.0
-#
-#             cur.execute(
-#                 '''INSERT INTO geolocation (
-#                         continent, latitude, longitude, elevation_ft, airport_id
-#                     ) VALUES(?, ?, ?, ?, ?)''',
-#                 (
-#                     airports.get('continent'),
-#                     latitude,
-#                     longitude,
-#                     airports.get('elevation_ft'),
-#                     airport_id
-#                 )
-#             )
-#
-#             cur.execute(
-#                 '''INSERT INTO code_list (
-#                         iso_country, iso_region, local_code, gps_code, iata_code, ident, airport_id
-#                     ) VALUES(?, ?, ?, ?, ?, ?, ?)''',
-#                 (
-#                     airports.get('iso_country'),
-#                     airports.get('iso_region'),
-#                     airports.get('local_code'),
-#                     airports.get('gps_code'),
-#                     airports.get('iata_code'),
-#                     airports.get('ident'),
-#                     airport_id
-#                 )
-#             )
-#
-#         con.commit()
+
+def insert_all_data_from_json():
+    '''
+    function for inserting data from json file
+    '''
+
+    with open('airport-codes_json (1).json', 'r') as file:
+        data = json.load(file)
+
+        with con:
+            for airports in data:
+                cur = con.cursor()
+
+                cur.execute(
+                    '''INSERT INTO airports (municipality, name, type) VALUES(?, ?, ?)''',
+                    (
+                        airports.get('municipality'),
+                        airports.get('name'),
+                        airports.get('type'),
+                    )
+                )
+
+                # last airport id
+                airport_id = cur.lastrowid
+
+                coords = airports.get('coordinates', '').split(',')
+                if len(coords) == 2:
+                    longitude = float(coords[0].strip())
+                    latitude = float(coords[1].strip())
+                else:
+                    longitude = latitude = 0.0
+
+                cur.execute(
+                    '''INSERT INTO geolocation (
+                            continent, latitude, longitude, elevation_ft, airport_id
+                        ) VALUES(?, ?, ?, ?, ?)''',
+                    (
+                        airports.get('continent'),
+                        latitude,
+                        longitude,
+                        airports.get('elevation_ft'),
+                        airport_id
+                    )
+                )
+
+                cur.execute(
+                    '''INSERT INTO code_list (
+                            iso_country, iso_region, local_code, gps_code, iata_code, ident, airport_id
+                        ) VALUES(?, ?, ?, ?, ?, ?, ?)''',
+                    (
+                        airports.get('iso_country'),
+                        airports.get('iso_region'),
+                        airports.get('local_code'),
+                        airports.get('gps_code'),
+                        airports.get('iata_code'),
+                        airports.get('ident'),
+                        airport_id
+                    )
+                )
+
+            con.commit()
+
 
 def get_heliport():
+    '''
+    getting information about helipports
+    '''
+
     with con:
         cur = con.cursor()
 
@@ -113,9 +126,13 @@ def get_heliport():
         if count == 0:
             print('Информация не найдена')
 
-# get_heliport()
 
 def get_airport_by_geolocation(x1, y1, x2, y2, type=None):
+    '''
+    getting airports by geolocation,
+    if type is None, receive all airports
+    '''
+
     with con:
         cur = con.cursor()
 
@@ -134,7 +151,7 @@ def get_airport_by_geolocation(x1, y1, x2, y2, type=None):
                   AND g.latitude BETWEEN ? AND ?
                   AND a.type = ?
             ''',
-            (min_x, max_x, min_y, max_y, type))
+                        (min_x, max_x, min_y, max_y, type))
         else:
             cur.execute('''
                 SELECT a.municipality, a.name 
@@ -143,7 +160,7 @@ def get_airport_by_geolocation(x1, y1, x2, y2, type=None):
                 WHERE g.longitude BETWEEN ? AND ?
                   AND g.latitude BETWEEN ? AND ?
             ''',
-            (min_x, max_x, min_y, max_y))
+                        (min_x, max_x, min_y, max_y))
 
         print(f'Аэропорты в диапазоне ({x1, y1}) - ({x2, y2}):')
         airports = cur.fetchall()
@@ -155,9 +172,11 @@ def get_airport_by_geolocation(x1, y1, x2, y2, type=None):
             print('Информация не найдена')
 
 
-# get_airport_by_geolocation(-74.93360137939453, 40.07080078125, -101.473911, 38.704022, 'heliport')
-
 def insert_new_data(data):
+    '''
+    insert new data from dictionary
+    '''
+
     required_fields = ['name', 'type', 'iso_country', 'iso_region', 'coordinates']
 
     if isinstance(data, dict):
@@ -177,16 +196,16 @@ def insert_new_data(data):
                 INSERT INTO airports (municipality, name, type)
                 VALUES (?, ?, ?)
             ''',
-            (airport.get('municipality'), airport['name'], airport['type'])
-            )
+                        (airport.get('municipality'), airport['name'], airport['type'])
+                        )
             airport_id = cur.lastrowid
 
             cur.execute('''
                 INSERT INTO geolocation (continent, longitude, latitude, elevation_ft, airport_id)
                 VALUES (?, ?, ?, ?, ?)
             ''',
-            (airport.get('continent'), longitude, latitude, airport.get('elevation_ft'), airport_id)
-            )
+                        (airport.get('continent'), longitude, latitude, airport.get('elevation_ft'), airport_id)
+                        )
 
             cur.execute('''
                 INSERT INTO code_list (
@@ -203,13 +222,12 @@ def insert_new_data(data):
                 airport_id
             ))
 
-# insert_new_data({'municipality': 'CHECK', 'name': 'CHECK', 'type': 'CHECK',
-#                  'continent': 'CHECK', 'coordinates': '0.0, 0.0', 'elevation_ft': 'CHECK',
-#                  'iso_country': 'CHECK', 'iso_region': 'CHECK',
-#                  'local_code': 'CHECK', 'gps_code': 'CHECK', 'iata_code': 'CHECK',
-#                  'ident': 'CHECK'})
 
 def insert_new_data_with_printing(data):
+    '''
+    insert new data from dictionary with printing
+    '''
+
     required_fields = ['name', 'type', 'iso_country', 'iso_region', 'coordinates']
 
     if isinstance(data, dict):
@@ -229,16 +247,16 @@ def insert_new_data_with_printing(data):
                 INSERT INTO airports (municipality, name, type)
                 VALUES (?, ?, ?)
             ''',
-            (airport.get('municipality'), airport['name'], airport['type'])
-            )
+                        (airport.get('municipality'), airport['name'], airport['type'])
+                        )
             airport_id = cur.lastrowid
 
             cur.execute('''
                 INSERT INTO geolocation (continent, longitude, latitude, elevation_ft, airport_id)
                 VALUES (?, ?, ?, ?, ?)
             ''',
-            (airport.get('continent'), longitude, latitude, airport.get('elevation_ft'), airport_id)
-            )
+                        (airport.get('continent'), longitude, latitude, airport.get('elevation_ft'), airport_id)
+                        )
 
             cur.execute('''
                 INSERT INTO code_list (
@@ -255,21 +273,20 @@ def insert_new_data_with_printing(data):
                 airport_id
             ))
 
-            print(airport['municipality'], ' - ' ,airport['name'], ' - ' , airport['type'], ' - ' ,
-                  airport['continent'], ' - ' , longitude, latitude, ' - ' , airport['elevation_ft'],
-                  ' - ' , airport['iso_country'], ' - ' , airport['iso_region'], ' - ' ,
-                  airport.get('local_code'), ' - ' ,
-                  airport.get('gps_code'), ' - ' , airport.get('iata_code'), ' - ' ,
+            print(airport['municipality'], ' - ', airport['name'], ' - ', airport['type'], ' - ',
+                  airport['continent'], ' - ', longitude, latitude, ' - ', airport['elevation_ft'],
+                  ' - ', airport['iso_country'], ' - ', airport['iso_region'], ' - ',
+                  airport.get('local_code'), ' - ',
+                  airport.get('gps_code'), ' - ', airport.get('iata_code'), ' - ',
                   airport.get('ident'),
                   )
 
-# insert_new_data_with_printing({'municipality': 'CHECK1', 'name': 'CHECK1', 'type': 'CHECK1',
-#                  'continent': 'CHECK1', 'coordinates': '0.0, 0.0', 'elevation_ft': 'CHECK1',
-#                  'iso_country': 'CHECK1', 'iso_region': 'CHECK1',
-#                  'local_code': 'CHECK1', 'gps_code': 'CHECK1', 'iata_code': 'CHECK1',
-#                  'ident': 'CHECK1'})
 
 def get_airports_by_params(params):
+    '''
+    get airports by some params
+    '''
+
     with con:
         cur = con.cursor()
 
@@ -346,5 +363,49 @@ def get_airports_by_params(params):
             for airport in airports:
                 print(airport)
 
-# get_airports_by_params({'name': 'Total Rf Heliport', 'iso_country': 'US'})
-# get_airports_by_params({'ident': '00A', 'iso_country': 'US', 'gps_code': '00A'})
+
+def start():
+    while True:
+        print('\nЧто ты хочешь сделать?')
+        print('[1] Вставить всю информацию из файла')
+        print('[2] Получить информацию о вертолетных аэропортах')
+        print('[3] Получить информацию об аэропортах по координатам')
+        print('[4] Вставить новую информацию')
+        print('[5] Вставить новую информацию с выводом')
+        print('[6] Получить информацию по параметрам')
+        print('[7] Выход')
+
+        try:
+            n = int(input())
+        except ValueError:
+            print('Ошибка: введите число от 1 до 7')
+            continue
+
+        if n == 1:
+            insert_all_data_from_json()
+        elif n == 2:
+            get_heliport()
+        elif n == 3:
+            get_airport_by_geolocation(-74.93360137939453, 40.07080078125, -101.473911, 38.704022, 'heliport')
+        elif n == 4:
+            insert_new_data({'municipality': 'CHECK', 'name': 'CHECK', 'type': 'CHECK',
+                             'continent': 'CHECK', 'coordinates': '0.0, 0.0', 'elevation_ft': 'CHECK',
+                             'iso_country': 'CHECK', 'iso_region': 'CHECK',
+                             'local_code': 'CHECK', 'gps_code': 'CHECK', 'iata_code': 'CHECK',
+                             'ident': 'CHECK'})
+        elif n == 5:
+            insert_new_data_with_printing({'municipality': 'CHECK1', 'name': 'CHECK1', 'type': 'CHECK1',
+                                           'continent': 'CHECK1', 'coordinates': '0.0, 0.0', 'elevation_ft': 'CHECK1',
+                                           'iso_country': 'CHECK1', 'iso_region': 'CHECK1',
+                                           'local_code': 'CHECK1', 'gps_code': 'CHECK1', 'iata_code': 'CHECK1',
+                                           'ident': 'CHECK1'})
+        elif n == 6:
+            get_airports_by_params({'name': 'Total Rf Heliport', 'iso_country': 'US'})
+            # get_airports_by_params({'ident': '00A', 'iso_country': 'US', 'gps_code': '00A'})
+        elif n == 7:
+            break
+        else:
+            print('Неверный ввод!')
+
+
+start()
