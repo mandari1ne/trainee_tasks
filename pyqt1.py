@@ -49,6 +49,8 @@ class Ui_MainWindow(object):
         )
         self.pushButton_2.setObjectName("pushButton_2")
 
+        self.pushButton_2.clicked.connect(self.delete_item_from_list)
+
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
         self.listWidget.setGeometry(QtCore.QRect(190, 10, 431, 301))
         self.listWidget.setStyleSheet(
@@ -84,6 +86,17 @@ class Ui_MainWindow(object):
 
     def insert_item_into_list(self):
         self.listWidget.addItem(self.lineEdit.text())
+
+    def delete_item_from_list(self):
+        selected_items = self.listWidget.selectedItems()
+
+        if selected_items:
+            for item in selected_items:
+                self.listWidget.takeItem(self.listWidget.row(item))
+
+        else:
+            last_row = self.listWidget.count() - 1
+            self.listWidget.takeItem(last_row)
 
 
 if __name__ == "__main__":
