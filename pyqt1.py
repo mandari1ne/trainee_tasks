@@ -25,6 +25,8 @@ class Ui_MainWindow(object):
         )
         self.pushButton.setObjectName("pushButton")
 
+        self.pushButton.clicked.connect(self.insert_item_into_list)
+
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit.setGeometry(QtCore.QRect(220, 350, 371, 51))
         self.lineEdit.setStyleSheet(
@@ -80,9 +82,13 @@ class Ui_MainWindow(object):
         self.pushButton.setText(_translate("MainWindow", "+"))
         self.pushButton_2.setText(_translate("MainWindow", "-"))
 
+    def insert_item_into_list(self):
+        self.listWidget.addItem(self.lineEdit.text())
+
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
