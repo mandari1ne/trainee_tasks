@@ -15,6 +15,7 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
+        # insert button
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(260, 470, 81, 71))
         self.pushButton.setStyleSheet(
@@ -25,8 +26,10 @@ class Ui_MainWindow(object):
         )
         self.pushButton.setObjectName("pushButton")
 
+        # connect to function for insert item
         self.pushButton.clicked.connect(self.insert_item_into_list)
 
+        # input lable
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit.setGeometry(QtCore.QRect(220, 350, 371, 51))
         self.lineEdit.setStyleSheet(
@@ -39,6 +42,7 @@ class Ui_MainWindow(object):
         self.lineEdit.setText("")
         self.lineEdit.setObjectName("lineEdit")
 
+        # delete button
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_2.setGeometry(QtCore.QRect(470, 470, 81, 71))
         self.pushButton_2.setStyleSheet(
@@ -49,10 +53,13 @@ class Ui_MainWindow(object):
         )
         self.pushButton_2.setObjectName("pushButton_2")
 
+        # connect to function for delete item
         self.pushButton_2.clicked.connect(self.delete_item_from_list)
 
+        # list items
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
         self.listWidget.setGeometry(QtCore.QRect(190, 10, 431, 301))
+        self.listWidget.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         self.listWidget.setStyleSheet(
             "QListWidget {\n"
             "    background-color:  rgb(255, 255, 255);\n"
@@ -84,10 +91,13 @@ class Ui_MainWindow(object):
         self.pushButton.setText(_translate("MainWindow", "+"))
         self.pushButton_2.setText(_translate("MainWindow", "-"))
 
+    # for inserting data
     def insert_item_into_list(self):
         self.listWidget.addItem(self.lineEdit.text())
 
+    # for deleting data
     def delete_item_from_list(self):
+        # get selected item
         selected_items = self.listWidget.selectedItems()
 
         if selected_items:
