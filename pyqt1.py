@@ -97,13 +97,15 @@ class Ui_MainWindow(object):
 
     # for deleting data
     def delete_item_from_list(self):
-        # get selected item
+        # get selected items
         selected_items = self.listWidget.selectedItems()
 
+        # if selected items exist delete them
         if selected_items:
             for item in selected_items:
                 self.listWidget.takeItem(self.listWidget.row(item))
 
+        # else delete last item
         else:
             last_row = self.listWidget.count() - 1
             self.listWidget.takeItem(last_row)
