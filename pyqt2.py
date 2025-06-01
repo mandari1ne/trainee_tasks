@@ -8,9 +8,11 @@ class DB:
         self.db = db
         self.connection = sql.connect(db)
 
-        # cur = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-
     def get_name_of_tables(self):
+        '''
+        getting name of tables
+        '''
+
         with self.connection:
             cur = self.connection.execute('''
                 SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'
@@ -19,6 +21,31 @@ class DB:
             self.tables = [row[0] for row in cur.fetchall()]
 
             return self.tables
+
+    def get_table_data(self, table_name):
+        '''
+        getting info from selected table
+        '''
+
+        with self.connection:
+            cur = self.connection.execute(f'''
+                SELECT * FROM {table_name}
+            ''')
+
+            data = cur.fetchall()
+
+            return data
+
+    def get_table_columns(self, table_name):
+        '''
+        getting column name of selected table
+        '''
+
+        with self.connection:
+            cur = self.connection.execute(f"Pragma table_info ({table_name})")
+            column_names = [info[1] for info in cur.fetchall()]
+
+            return column_names
 
 
 class Ui_MainWindow(object):
@@ -54,6 +81,8 @@ class Ui_MainWindow(object):
         self.comboBox.addItem("Название таблицы")
         self.comboBox.setItemData(0, 0, QtCore.Qt.UserRole - 1)
         self.comboBox.addItems(db.get_name_of_tables())
+
+        self.comboBox.currentTextChanged.connect(self.get_table_info)
 
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(530, 40, 81, 41))
@@ -98,6 +127,23 @@ class Ui_MainWindow(object):
         self.pushButton_2.setText(_translate("MainWindow", "+"))
         self.pushButton_3.setText(_translate("MainWindow", "Reset"))
         self.pushButton_4.setText(_translate("MainWindow", "-"))
+
+    def get_table_info(self):
+        '''
+        getting selected table info
+        '''
+
+        table = self.comboBox.currentText()
+        table_data = db.get_table_data(table)
+        columns_name = db.get_table_columns(table)
+
+        self.tableWidget.setColumnCount(len(columns_name))
+        self.tableWidget.setRowCount(len(table_data))
+        self.tableWidget.setHorizontalHeaderLabels(columns_name)
+
+        for row_index, row_data in enumerate(table_data):
+            for col_index, value in enumerate(row_data):
+                self.tableWidget.setItem(row_index, col_index, QtWidgets.QTableWidgetItem(str(value)))
 
 
 if __name__ == "__main__":
