@@ -1,8 +1,28 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+import sqlite3 as sql
+
+
+# class for db connection
+class DB:
+    def __init__(self, db: str):
+        self.db = db
+        self.connection = sql.connect(db)
+
+        # cur = con.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+
+    def get_name_of_tables(self):
+        with self.connection:
+            cur = self.connection.execute('''
+                SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'
+            ''')
+
+            self.tables = [row[0] for row in cur.fetchall()]
+
+            return self.tables
 
 
 class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
+    def setupUi(self, MainWindow, db=None):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(891, 614)
         MainWindow.setStyleSheet("background-color: rgb(219, 243, 255);")
@@ -31,6 +51,9 @@ class Ui_MainWindow(object):
         self.comboBox.setStyleSheet("background-color: rgb(188, 249, 255);\n"
                                     "font-size: 20px;")
         self.comboBox.setObjectName("comboBox")
+        self.comboBox.addItem("Название таблицы")
+        self.comboBox.setItemData(0, 0, QtCore.Qt.UserRole - 1)
+        self.comboBox.addItems(db.get_name_of_tables())
 
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(530, 40, 81, 41))
@@ -82,7 +105,11 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
+
+    db = DB('warehouse.db')
+
     ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
+    ui.setupUi(MainWindow, db)
+
     MainWindow.show()
     sys.exit(app.exec_())
