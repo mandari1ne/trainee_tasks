@@ -104,6 +104,8 @@ class Ui_MainWindow(object):
                                         "font-size: 20px;")
         self.pushButton_3.setObjectName("pushButton_3")
 
+        self.pushButton_3.clicked.connect(self.reset_info)
+
         self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_4.setGeometry(QtCore.QRect(800, 40, 81, 41))
         self.pushButton_4.setStyleSheet("background-color: rgb(188, 249, 255);\n"
@@ -158,6 +160,13 @@ class Ui_MainWindow(object):
             self.lineEdit.setText('Выберите название таблицы')
         else:
             self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
+
+    def reset_info(self):
+        '''
+        reset unsaved info
+        '''
+
+        self.get_table_info()
 
 
 if __name__ == "__main__":
