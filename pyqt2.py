@@ -1,3 +1,5 @@
+from operator import index
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 import sqlite3 as sql
 
@@ -112,6 +114,8 @@ class Ui_MainWindow(object):
                                         "font-size: 20px;")
         self.pushButton_4.setObjectName("pushButton_4")
 
+        self.pushButton_4.clicked.connect(self.delete_selected_rows)
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 891, 18))
@@ -166,8 +170,27 @@ class Ui_MainWindow(object):
         reset unsaved info
         '''
 
-        self.get_table_info()
+        if self.comboBox.currentText() == 'Название таблицы':
+            self.lineEdit.setText('Выберите название таблицы')
+        else:
+            self.get_table_info()
 
+    def delete_selected_rows(self):
+        '''
+        delete selected table row without saving
+        '''
+
+        if self.comboBox.currentText() == 'Название таблицы':
+            self.lineEdit.setText('Выберите название таблицы')
+        else:
+            selected_rows = {index.row() for index in self.tableWidget.selectedIndexes()}
+
+            if not selected_rows:
+                self.lineEdit.setText('Выберите строки в таблице')
+            else:
+                # delete from the end so that the indexes don't move
+                for row in sorted(selected_rows, reverse=True):
+                    self.tableWidget.removeRow(row)
 
 if __name__ == "__main__":
     import sys
