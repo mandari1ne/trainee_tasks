@@ -96,6 +96,8 @@ class Ui_MainWindow(object):
                                         "font-size: 20px;")
         self.pushButton_2.setObjectName("pushButton_2")
 
+        self.pushButton_2.clicked.connect(self.add_table_row)
+
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setGeometry(QtCore.QRect(710, 40, 81, 41))
         self.pushButton_3.setStyleSheet("background-color: rgb(188, 249, 255);\n"
@@ -133,6 +135,8 @@ class Ui_MainWindow(object):
         getting selected table info
         '''
 
+        self.lineEdit.clear()
+
         table = self.comboBox.currentText()
         table_data = db.get_table_data(table)
         columns_name = db.get_table_columns(table)
@@ -144,6 +148,16 @@ class Ui_MainWindow(object):
         for row_index, row_data in enumerate(table_data):
             for col_index, value in enumerate(row_data):
                 self.tableWidget.setItem(row_index, col_index, QtWidgets.QTableWidgetItem(str(value)))
+
+    def add_table_row(self):
+        '''
+        for adding new table row
+        '''
+
+        if self.comboBox.currentText() == 'Название таблицы':
+            self.lineEdit.setText('Выберите название таблицы')
+        else:
+            self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
 
 
 if __name__ == "__main__":
