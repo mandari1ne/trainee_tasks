@@ -1,7 +1,6 @@
-from operator import index
-
 from PyQt5 import QtCore, QtGui, QtWidgets
 import sqlite3 as sql
+from datetime import datetime
 
 
 # class for db connection
@@ -63,6 +62,12 @@ class DB:
 
 
 class Ui_MainWindow(object):
+    def __init__(self):
+        super().__init__()
+
+        # list of modified cells (row, col)
+        self.modified_cells = set()
+
     def setupUi(self, MainWindow, db=None):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(891, 614)
@@ -78,6 +83,8 @@ class Ui_MainWindow(object):
         self.tableWidget.setObjectName("tableWidget")
         self.tableWidget.setColumnCount(0)
         self.tableWidget.setRowCount(0)
+
+        self.tableWidget.itemChanged.connect(self.handle_modified)
 
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit.setGeometry(QtCore.QRect(10, 500, 871, 71))
@@ -103,6 +110,8 @@ class Ui_MainWindow(object):
         self.pushButton.setStyleSheet("background-color: rgb(188, 249, 255);\n"
                                       "font-size: 20px;")
         self.pushButton.setObjectName("pushButton")
+
+        self.pushButton.clicked.connect(self.save)
 
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_2.setGeometry(QtCore.QRect(620, 40, 81, 41))
@@ -180,6 +189,7 @@ class Ui_MainWindow(object):
         '''
 
         if self.comboBox.currentText() == 'Название таблицы':
+            self.lineEdit.setStyleSheet("color: red;")
             self.lineEdit.setText('Выберите название таблицы')
         else:
             self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
@@ -190,6 +200,7 @@ class Ui_MainWindow(object):
         '''
 
         if self.comboBox.currentText() == 'Название таблицы':
+            self.lineEdit.setStyleSheet("color: red;")
             self.lineEdit.setText('Выберите название таблицы')
         else:
             self.get_table_info()
@@ -200,16 +211,111 @@ class Ui_MainWindow(object):
         '''
 
         if self.comboBox.currentText() == 'Название таблицы':
+            self.lineEdit.setStyleSheet("color: red;")
             self.lineEdit.setText('Выберите название таблицы')
         else:
             selected_rows = {index.row() for index in self.tableWidget.selectedIndexes()}
 
             if not selected_rows:
+                self.lineEdit.setStyleSheet("color: red;")
                 self.lineEdit.setText('Выберите строки в таблице')
             else:
                 # delete from the end so that the indexes don't move
                 for row in sorted(selected_rows, reverse=True):
                     self.tableWidget.removeRow(row)
+
+    def handle_modified(self, item):
+        '''
+        add modified item into the modified list
+        '''
+
+        row, col = item.row(), item.column()
+        self.modified_cells.add((row, col))
+
+    def save(self):
+        '''
+        save table changes
+        '''
+
+        if self.comboBox.currentText() == 'Название таблицы':
+            self.lineEdit.setStyleSheet("color: red;")
+            self.lineEdit.setText('Выберите название таблицы')
+        else:
+            table_name = self.comboBox.currentText()
+            columns_info = db.get_table_columns(table_name)
+            errors = []
+
+            for row, col in self.modified_cells:
+                column_info = columns_info[col]
+                column_name = column_info[1]
+                column_type = column_info[2].upper()
+                not_null = column_info[3]
+                pk = column_info[5]
+
+                if pk:
+                    continue
+
+                item = self.tableWidget.item(row, col)
+                value = item.text() if item else ''
+
+                if not_null and value == '':
+                    errors.append(f'Строка {row + 1}, колонка "{column_name}": значение не должно быть пустым')
+                    continue
+
+                if value:
+                    try:
+                        if 'INT' in column_type:
+                            int(value)
+                        elif 'REAL' in column_type or 'FLOAT' in column_type or 'DOUBLE' in column_type:
+                            float(value)
+                        elif 'BOOLEAN' in column_type:
+                            if value.upper() not in ('0', '1', 'TRUE', 'FALSE'):
+                                raise ValueError
+                        elif 'DATE' in column_type:
+                            datetime.strptime(value, '%Y-%m-%d')
+                        elif 'TIME' in column_type:
+                            datetime.strptime(value, '%H:%M:%S')
+                        elif 'DATETIME' in column_type or 'TIMESTAMP' in column_type:
+                            datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                    except ValueError as ve:
+                        if 'DATE' in column_type or 'TIME' in column_type or 'DATETIME' in column_type:
+                            errors.append(
+                                f'Строка {row + 1}, колонка "{column_name}": неверный формат. Ожидается {column_type}')
+                        else:
+                            errors.append(
+                                f'Строка {row + 1}, колонка "{column_name}": неверный тип. Ожидается {column_type}')
+
+            if errors:
+                self.lineEdit.setText('\n'.join(errors))
+            else:
+                try:
+                    for row, col in self.modified_cells:
+                        row_id = self.tableWidget.item(row, 0).text()
+                        column_name = columns_info[col][1]
+                        column_type = columns_info[col][2].upper()
+                        item = self.tableWidget.item(row, col)
+                        new_value = item.text() if item else ''
+
+                        if new_value == '':
+                            formatted_value = 'NULL'
+                        elif 'INT' in column_type or 'BOOLEAN' in column_type:
+                            formatted_value = new_value
+                        elif 'REAL' in column_type or 'FLOAT' in column_type or 'DOUBLE' in column_type:
+                            formatted_value = new_value
+                        elif 'DATE' in column_type or 'TIME' in column_type or 'DATETIME' in column_type or 'TIMESTAMP' in column_type:
+                            formatted_value = f"'{new_value}'"
+                        else:  # TEXT, VARCHAR and other string types
+                            # Proper escaping for SQL strings
+                            escaped_value = new_value.replace("'", "''")
+                            formatted_value = f"'{escaped_value}'"
+
+                        db.update_table_data(table_name, row_id, column_name, formatted_value)
+
+                    self.lineEdit.setStyleSheet("color: green;")
+                    self.lineEdit.setText('Сохранено успешно')
+                    self.modified_cells.clear()
+                except Exception as e:
+                    self.lineEdit.setText(f'Ошибка при сохранении: {str(e)}')
 
 
 if __name__ == "__main__":
