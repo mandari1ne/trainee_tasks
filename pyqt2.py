@@ -40,14 +40,26 @@ class DB:
 
     def get_table_columns(self, table_name):
         '''
-        getting column name of selected table
+        getting column info of selected table
         '''
 
         with self.connection:
             cur = self.connection.execute(f"Pragma table_info ({table_name})")
-            column_names = [info[1] for info in cur.fetchall()]
+            column_info = cur.fetchall()
 
-            return column_names
+            return column_info
+
+    def update_table_data(self, table_name, id, column_name, new_value):
+        '''
+        update table row
+        '''
+
+        with self.connection:
+            self.connection.execute(f'''
+                UPDATE {table_name} SET {column_name} = {new_value} WHERE id = {id} 
+            ''')
+
+            self.connection.commit()
 
 
 class Ui_MainWindow(object):
@@ -145,7 +157,7 @@ class Ui_MainWindow(object):
 
         table = self.comboBox.currentText()
         table_data = db.get_table_data(table)
-        columns_name = db.get_table_columns(table)
+        columns_name = [col[1] for col in db.get_table_columns(table)]
 
         self.tableWidget.setColumnCount(len(columns_name))
         self.tableWidget.setRowCount(len(table_data))
@@ -153,7 +165,14 @@ class Ui_MainWindow(object):
 
         for row_index, row_data in enumerate(table_data):
             for col_index, value in enumerate(row_data):
-                self.tableWidget.setItem(row_index, col_index, QtWidgets.QTableWidgetItem(str(value)))
+                item = QtWidgets.QTableWidgetItem(str(value))
+
+                # blocked id column
+                if col_index == 0:
+                    item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
+                    item.setForeground(QtGui.QColor(100, 100, 100))
+
+                self.tableWidget.setItem(row_index, col_index, item)
 
     def add_table_row(self):
         '''
@@ -191,6 +210,7 @@ class Ui_MainWindow(object):
                 # delete from the end so that the indexes don't move
                 for row in sorted(selected_rows, reverse=True):
                     self.tableWidget.removeRow(row)
+
 
 if __name__ == "__main__":
     import sys
