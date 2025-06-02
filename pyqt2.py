@@ -60,6 +60,18 @@ class DB:
 
             self.connection.commit()
 
+    def delete_rows(self, table_name, row_id):
+        '''
+        delete table row by id
+        '''
+
+        with self.connection:
+            self.connection.execute(f'''
+                DELETE FROM {table_name} WHERE id = ?
+            ''', (row_id,))
+
+            self.connection.commit()
+
 
 class Ui_MainWindow(object):
     def __init__(self):
@@ -67,6 +79,12 @@ class Ui_MainWindow(object):
 
         # list of modified cells (row, col)
         self.modified_cells = set()
+
+        # list of deleted rows
+        self.rows_to_delete = set()
+
+        # original table data
+        self.original_data = {}
 
     def setupUi(self, MainWindow, db=None):
         MainWindow.setObjectName("MainWindow")
@@ -163,10 +181,18 @@ class Ui_MainWindow(object):
         '''
 
         self.lineEdit.clear()
+        self.rows_to_delete.clear()
+        self.modified_cells.clear()
 
         table = self.comboBox.currentText()
         table_data = db.get_table_data(table)
         columns_name = [col[1] for col in db.get_table_columns(table)]
+
+        self.original_data = {
+            'table': table,
+            'columns': columns_name,
+            'data': table_data
+        }
 
         self.tableWidget.setColumnCount(len(columns_name))
         self.tableWidget.setRowCount(len(table_data))
@@ -203,6 +229,8 @@ class Ui_MainWindow(object):
             self.lineEdit.setStyleSheet("color: red;")
             self.lineEdit.setText('Выберите название таблицы')
         else:
+            self.rows_to_delete.clear()
+            self.modified_cells.clear()
             self.get_table_info()
 
     def delete_selected_rows(self):
@@ -220,17 +248,34 @@ class Ui_MainWindow(object):
                 self.lineEdit.setStyleSheet("color: red;")
                 self.lineEdit.setText('Выберите строки в таблице')
             else:
+                table_name = self.comboBox.currentText()
+
                 # delete from the end so that the indexes don't move
                 for row in sorted(selected_rows, reverse=True):
+                    row_id_item = self.tableWidget.item(row, 0)
+                    # save id of deleted row
+                    if row_id_item:
+                        self.rows_to_delete.add((table_name, row_id_item.text()))
+
                     self.tableWidget.removeRow(row)
 
     def handle_modified(self, item):
         '''
-        add modified item into the modified list
+        add modified item into the modified list only if value actually changed
         '''
-
         row, col = item.row(), item.column()
-        self.modified_cells.add((row, col))
+
+        # getting original data from db
+        original_value = str(self.original_data['data'][row][col]) if row < len(self.original_data['data']) else ''
+
+        # getting current data
+        current_value = item.text() if item else ''
+
+        # checking modified
+        if current_value != original_value:
+            self.modified_cells.add((row, col))
+        elif (row, col) in self.modified_cells:
+            self.modified_cells.remove((row, col))
 
     def save(self):
         '''
@@ -240,11 +285,24 @@ class Ui_MainWindow(object):
         if self.comboBox.currentText() == 'Название таблицы':
             self.lineEdit.setStyleSheet("color: red;")
             self.lineEdit.setText('Выберите название таблицы')
+            return
+
+        elif not self.rows_to_delete and not self.modified_cells:
+            self.lineEdit.setStyleSheet("color: red;")
+            self.lineEdit.setText('Изменений не произошло')
+            return
+
         else:
             table_name = self.comboBox.currentText()
             columns_info = db.get_table_columns(table_name)
             errors = []
 
+            # save table after deleting rows
+            for table, row in self.rows_to_delete:
+                db.delete_rows(table, row)
+            self.rows_to_delete.clear()
+
+            # save table after modified rows
             for row, col in self.modified_cells:
                 column_info = columns_info[col]
                 column_name = column_info[1]
