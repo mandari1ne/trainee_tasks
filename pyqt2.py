@@ -72,6 +72,18 @@ class DB:
 
             self.connection.commit()
 
+    def insert_new_row(self, table_name, columns, values):
+        '''
+        insert new data
+        '''
+
+        with self.connection:
+            self.connection.execute(f'''
+                INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(values)}) 
+            ''')
+
+            self.connection.commit()
+
 
 class Ui_MainWindow(object):
     def __init__(self):
@@ -218,7 +230,16 @@ class Ui_MainWindow(object):
             self.lineEdit.setStyleSheet("color: red;")
             self.lineEdit.setText('Выберите название таблицы')
         else:
-            self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
+            row_position = self.tableWidget.rowCount()
+            self.tableWidget.insertRow(row_position)
+
+            # insert null values
+            for col in range(self.tableWidget.columnCount()):
+                item = QtWidgets.QTableWidgetItem('')
+
+                if col == 0:
+                    item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
+                self.tableWidget.setItem(row_position, col, item)
 
     def reset_info(self):
         '''
@@ -287,7 +308,21 @@ class Ui_MainWindow(object):
             self.lineEdit.setText('Выберите название таблицы')
             return
 
-        elif not self.rows_to_delete and not self.modified_cells:
+        new_data = []
+        for row in range(self.tableWidget.rowCount()):
+            id_item = self.tableWidget.item(row, 0)
+            if not id_item or not id_item.text():
+                row_data = []
+                for col in range(self.tableWidget.columnCount()):
+                    item = self.tableWidget.item(row, col)
+                    if item is None:
+                        row_data.append('')
+                    else:
+                        row_data.append(item.text())
+
+                new_data.append(row_data)
+
+        if not self.rows_to_delete and not self.modified_cells and not new_data:
             self.lineEdit.setStyleSheet("color: red;")
             self.lineEdit.setText('Изменений не произошло')
             return
@@ -296,6 +331,42 @@ class Ui_MainWindow(object):
             table_name = self.comboBox.currentText()
             columns_info = db.get_table_columns(table_name)
             errors = []
+
+            # handle new row
+            for row_data in new_data:
+                columns = []
+                values = []
+                for col, value in enumerate(row_data):
+                    column_info = columns_info[col]
+                    column_name = column_info[1]
+                    column_type = column_info[2].upper()
+                    not_null = column_info[3]
+
+                    # skip new row id
+                    if column_name.lower() == 'id':
+                        continue
+
+                    if not_null and (value == '' or value is None):
+                        errors.append(f'Новая строка, колонка "{column_name}": значение не должно быть пустым')
+                        continue
+
+                    columns.append(column_name)
+
+                    if value == '':
+                        values.append('NULL')
+                    elif 'INT' in column_type or 'BOOLEAN' in column_type:
+                        values.append(value)
+                    elif 'REAL' in column_type or 'FLOAT' in column_type or 'DOUBLE' in column_type:
+                        values.append(value)
+                    elif 'DATE' in column_type or 'TIME' in column_type or 'DATETIME' in column_type:
+                        values.append(f"'{value}'")
+                    else:  # TEXT and other types
+                        escaped_value = value.replace("'", "''")
+                        values.append(f"'{escaped_value}'")
+
+                # insert new data
+                if columns:
+                    db.insert_new_row(table_name, columns, values)
 
             # save table after deleting rows
             for table, row in self.rows_to_delete:
@@ -373,6 +444,7 @@ class Ui_MainWindow(object):
                     self.lineEdit.setText('Сохранено успешно')
                     self.modified_cells.clear()
                 except Exception as e:
+                    self.lineEdit.setStyleSheet("color: red;")
                     self.lineEdit.setText(f'Ошибка при сохранении: {str(e)}')
 
 
