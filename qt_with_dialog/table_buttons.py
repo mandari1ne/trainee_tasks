@@ -4,7 +4,13 @@ import table_info
 
 
 class Ui_MainWindow(object):
-    def setupUi(self, MainWindow, db):
+    def __init__(self):
+        self.db = None
+        self.open_windows = []
+
+    def setupUi(self, MainWindow, db_):
+        self.db = db_
+
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -27,12 +33,13 @@ class Ui_MainWindow(object):
 
         self.set_table_name_buttons()
 
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
 
     def set_table_name_buttons(self):
-        table_names = db.get_name_of_tables()
+        table_names = self.db.get_name_of_tables()
 
         for name in table_names:
             pushButton = QtWidgets.QPushButton(self.centralwidget)
@@ -46,14 +53,14 @@ class Ui_MainWindow(object):
             pushButton.clicked.connect(lambda checked, current_name=name: self.open_table_info(current_name))
 
     def open_table_info(self, table_name):
-
-        self.table_info_window = QtWidgets.QMainWindow()
+        table_info_window = QtWidgets.QMainWindow()
         ui = table_info.Ui_MainWindow()
-        ui.setupUi(self.table_info_window)
+        ui.setupUi(table_info_window)
 
-        ui.get_table_info(table_name, db)
+        ui.get_table_info(table_name, self.db)
+        self.open_windows.append((table_info_window, ui))
 
-        self.table_info_window.show()
+        table_info_window.show()
 
 if __name__ == "__main__":
     import sys
@@ -61,9 +68,9 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
 
-    db = db.DB('warehouse.db')
+    db_ = db.DB('warehouse.db')
 
     ui = Ui_MainWindow()
-    ui.setupUi(MainWindow, db)
+    ui.setupUi(MainWindow, db_)
     MainWindow.show()
     sys.exit(app.exec_())

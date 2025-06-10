@@ -2,6 +2,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Ui_MainWindow(object):
+    def __init__(self):
+        self.new_table_row = {}
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
@@ -31,6 +34,7 @@ class Ui_MainWindow(object):
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_2.setStyleSheet("font-size: 22px;")
         self.pushButton_2.setObjectName("pushButton_2")
+        self.pushButton_2.clicked.connect(self.add_table_row)
         self.horizontalLayout.addWidget(self.pushButton_2)
 
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
@@ -67,12 +71,12 @@ class Ui_MainWindow(object):
         self.pushButton_3.setText(_translate("MainWindow", "Delete"))
         self.pushButton_4.setText(_translate("MainWindow", "Reset"))
 
-    def get_table_info(self,  table_name, db):
+    def get_table_info(self,  table_name, db_):
         self.table = table_name
-        self.db = db
+        self.db = db_
 
-        table_data = db.get_table_data(self.table)
-        columns_name = [col[1] for col in db.get_table_columns(self.table)]
+        table_data = db_.get_table_data(self.table)
+        columns_name = [col[1] for col in self.db.get_table_columns(self.table)]
 
         self.tableWidget.blockSignals(True)
 
@@ -93,12 +97,29 @@ class Ui_MainWindow(object):
 
         self.tableWidget.blockSignals(False)
 
+    def add_table_row(self):
+        row_position = self.tableWidget.rowCount()
+        self.tableWidget.insertRow(row_position)
+
+        if row_position not in self.new_table_row:
+            self.new_table_row[row_position] = ()
+
+        # insert null values
+        for col in range(self.tableWidget.columnCount()):
+            item = QtWidgets.QTableWidgetItem('')
+
+            if col == 0:
+                item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
+
+            self.tableWidget.setItem(row_position, col, item)
+
 
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
 
     ui = Ui_MainWindow()
-    ui.show()
-
+    ui.setupUi(MainWindow)
+    MainWindow.show()
     sys.exit(app.exec_())
