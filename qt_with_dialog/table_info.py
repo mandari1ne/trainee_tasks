@@ -4,6 +4,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def __init__(self):
         self.new_table_row = {}
+        self.deleted_row = set()
 
         self.table = None
         self.db = None
@@ -43,6 +44,7 @@ class Ui_MainWindow(object):
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setStyleSheet("font-size: 22px;")
         self.pushButton_3.setObjectName("pushButton_3")
+        self.pushButton_3.clicked.connect(self.delete_selected_row)
         self.horizontalLayout.addWidget(self.pushButton_3)
 
         self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
@@ -78,6 +80,9 @@ class Ui_MainWindow(object):
     def get_table_info(self,  table_name, db_):
         self.table = table_name
         self.db = db_
+
+        self.new_table_row.clear()
+        self.deleted_row.clear()
 
         table_data = db_.get_table_data(self.table)
         columns_name = [col[1] for col in self.db.get_table_columns(self.table)]
@@ -116,6 +121,18 @@ class Ui_MainWindow(object):
                 item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
 
             self.tableWidget.setItem(row_position, col, item)
+
+    def delete_selected_row(self):
+        selected_rows = {index.row() for index in self.tableWidget.selectedIndexes()}
+
+        # delete from the end so that the indexes don't move
+        for row in sorted(selected_rows, reverse=True):
+            row_id_item = self.tableWidget.item(row, 0)
+            # save id of deleted row
+            if row_id_item:
+                self.deleted_row.add((self.table, row_id_item.text()))
+
+            self.tableWidget.removeRow(row)
 
 
 if __name__ == "__main__":
