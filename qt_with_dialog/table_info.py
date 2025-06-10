@@ -1,10 +1,15 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+import dialog
 
 
 class Ui_MainWindow(object):
     def __init__(self):
         self.new_table_row = {}
         self.deleted_row = set()
+        self.changed_rows = set()
+
+        # {row_index: {col_name: value}}
+        self.original_table_info = {}
 
         self.table = None
         self.db = None
@@ -22,6 +27,7 @@ class Ui_MainWindow(object):
         self.tableWidget.setObjectName("tableWidget")
         self.tableWidget.setColumnCount(0)
         self.tableWidget.setRowCount(0)
+        self.tableWidget.cellClicked.connect(self.get_row_details)
         self.verticalLayout.addWidget(self.tableWidget)
 
         self.horizontalLayout = QtWidgets.QHBoxLayout()
@@ -83,6 +89,8 @@ class Ui_MainWindow(object):
 
         self.new_table_row.clear()
         self.deleted_row.clear()
+        self.changed_rows.clear()
+        self.original_table_info.clear()
 
         table_data = db_.get_table_data(self.table)
         columns_name = [col[1] for col in self.db.get_table_columns(self.table)]
@@ -94,6 +102,8 @@ class Ui_MainWindow(object):
         self.tableWidget.setHorizontalHeaderLabels(columns_name)
 
         for row_index, row_data in enumerate(table_data):
+            if row_index not in self.original_table_info:
+                self.original_table_info[row_index] = {}
             for col_index, value in enumerate(row_data):
                 item = QtWidgets.QTableWidgetItem(str(value))
 
@@ -103,6 +113,8 @@ class Ui_MainWindow(object):
                     item.setForeground(QtGui.QColor(100, 100, 100))
 
                 self.tableWidget.setItem(row_index, col_index, item)
+
+                self.original_table_info[row_index][columns_name[col_index]] = str(value)
 
         self.tableWidget.blockSignals(False)
 
@@ -133,6 +145,20 @@ class Ui_MainWindow(object):
                 self.deleted_row.add((self.table, row_id_item.text()))
 
             self.tableWidget.removeRow(row)
+
+    def get_row_details(self, row, column):
+        row_data = {}
+        columns_info = self.db.get_table_columns(self.table)
+        column_names = [col[1] for col in columns_info]
+
+        for col_index, col_name in enumerate(column_names):
+            item = self.tableWidget.item(row, col_index)
+            value = item.text() if item else ''
+            row_data[col_name] = value
+
+        dialog_ = dialog.Ui_Dialog()
+        dialog_.set_row_data(row_data)
+        dialog_.exec_()
 
 
 if __name__ == "__main__":
