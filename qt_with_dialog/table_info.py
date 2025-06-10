@@ -5,6 +5,9 @@ class Ui_MainWindow(object):
     def __init__(self):
         self.new_table_row = {}
 
+        self.table = None
+        self.db = None
+
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
@@ -45,6 +48,7 @@ class Ui_MainWindow(object):
         self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_4.setStyleSheet("font-size: 22px;")
         self.pushButton_4.setObjectName("pushButton_4")
+        self.pushButton_4.clicked.connect(lambda: self.get_table_info(self.table, self.db))
         self.horizontalLayout.addWidget(self.pushButton_4)
 
         self.horizontalLayout.addItem(
