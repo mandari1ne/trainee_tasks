@@ -1,20 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-import sqlite3 as sql
+import db
 
-class DB:
-    def __init__(self, db: str):
-        self.db = db
-        self.connection = sql.connect(self.db)
-
-    def get_name_of_tables(self):
-        with self.connection:
-            cur = self.connection.execute('''
-                SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'
-            ''')
-
-            self.tables = [row[0] for row in cur.fetchall()]
-
-            return self.tables
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow, db):
@@ -58,10 +44,11 @@ class Ui_MainWindow(object):
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
 
-    db = DB('warehouse.db')
+    db = db.DB('warehouse.db')
 
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow, db)
