@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import db
+import table_info
 
 
 class Ui_MainWindow(object):
@@ -38,9 +39,21 @@ class Ui_MainWindow(object):
             pushButton.setStyleSheet('font-size: 20px;')
             pushButton.setObjectName(f'pushButton_{name}')
             pushButton.setText(name)
+            pushButton.setProperty('table_name', name)
 
             self.verticalLayout.addWidget(pushButton)
 
+            pushButton.clicked.connect(lambda checked, current_name=name: self.open_table_info(current_name))
+
+    def open_table_info(self, table_name):
+
+        self.table_info_window = QtWidgets.QMainWindow()
+        ui = table_info.Ui_MainWindow()
+        ui.setupUi(self.table_info_window)
+
+        ui.get_table_info(table_name, db)
+
+        self.table_info_window.show()
 
 if __name__ == "__main__":
     import sys
