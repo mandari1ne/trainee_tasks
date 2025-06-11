@@ -1,5 +1,6 @@
 import sqlite3 as sql
 
+
 class DB:
     def __init__(self, db: str):
         self.db = db
@@ -78,5 +79,29 @@ class DB:
             self.connection.execute(f'''
                    DELETE FROM {table_name} WHERE id = ?
                ''', (row_id,))
+
+            self.connection.commit()
+
+    def insert_data(self, table_name, values):
+        print('tytyty')
+        with self.connection:
+            columns = ', '.join(values.keys())
+            insert_value = ', '.join(['?'] * len(values))
+
+            self.connection.execute(f'''
+                INSERT INTO {table_name} ({columns}) VALUES ({insert_value})
+            ''', tuple(values.values()))
+
+            self.connection.commit()
+            print('ok')
+
+    def update_row(self, table_name, row_id, values):
+        with self.connection:
+            update_value = ', '.join(f'{col} = ?' for col in values.keys())
+            params = list(values.values()) + [row_id]
+
+            self.connection.execute(f'''
+                   UPDATE {table_name} SET {update_value} WHERE id = ?
+               ''', params)
 
             self.connection.commit()

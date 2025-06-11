@@ -168,19 +168,38 @@ class Ui_MainWindow(object):
                 item = QtWidgets.QTableWidgetItem(str(value))
                 self.tableWidget.setItem(row, col_index, item)
 
+            row_id_item = self.tableWidget.item(row, 0)
+            if row_id_item and row_id_item.text():
+                self.changed_rows.add(row)
+            else:
+                self.new_table_row[row] = updated_data
+
     def delete_row(self):
         for table, row in self.deleted_row:
             self.db.delete_row(table, row)
         self.deleted_row.clear()
 
-    def save(self):
-        try:
-            self.delete_row()
+    def insert_new_row(self):
+        for row_index, row_data in self.new_table_row.items():
+            try:
+                row_insert = {k: v for k, v in row_data.items() if k.lower() != 'id'}
+                self.db.insert_data(self.table, row_insert)
+            except Exception as e:
+                self.statusbar.setStyleSheet('color: red;')
+                self.statusbar.showMessage('Ошибка сохранения', 3000)
 
-            self.statusbar.setStyleSheet('color: green;')
-            self.statusbar.showMessage('Сохранено успешно', 3000)
-        except Exception as e:
-            self.statusbar.showMessage('Ошибка сохранения')
+        self.new_table_row.clear()
+
+    def save(self):
+            try:
+                self.delete_row()
+                self.insert_new_row()
+
+                self.statusbar.setStyleSheet('color: green;')
+                self.statusbar.showMessage('Сохранено успешно', 3000)
+            except Exception as e:
+                self.statusbar.setStyleSheet('color: red;')
+                self.statusbar.showMessage('Ошибка сохранения', 3000)
 
 
 if __name__ == "__main__":
