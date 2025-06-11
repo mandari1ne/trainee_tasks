@@ -83,7 +83,6 @@ class DB:
             self.connection.commit()
 
     def insert_data(self, table_name, values):
-        print('tytyty')
         with self.connection:
             columns = ', '.join(values.keys())
             insert_value = ', '.join(['?'] * len(values))
@@ -93,7 +92,6 @@ class DB:
             ''', tuple(values.values()))
 
             self.connection.commit()
-            print('ok')
 
     def update_row(self, table_name, row_id, values):
         with self.connection:

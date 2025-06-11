@@ -28,6 +28,7 @@ class Ui_MainWindow(object):
         self.tableWidget.setColumnCount(0)
         self.tableWidget.setRowCount(0)
         self.tableWidget.cellClicked.connect(self.get_row_details)
+        self.tableWidget.itemChanged.connect(self.on_item_changed)
         self.verticalLayout.addWidget(self.tableWidget)
 
         self.horizontalLayout = QtWidgets.QHBoxLayout()
@@ -83,6 +84,9 @@ class Ui_MainWindow(object):
         self.pushButton_2.setText(_translate("MainWindow", "Add"))
         self.pushButton_3.setText(_translate("MainWindow", "Delete"))
         self.pushButton_4.setText(_translate("MainWindow", "Reset"))
+
+    def on_item_changed(self, item):
+        self.changed_rows.add(item.row())
 
     def get_table_info(self, table_name, db_):
         self.table = table_name
@@ -174,6 +178,19 @@ class Ui_MainWindow(object):
             else:
                 self.new_table_row[row] = updated_data
 
+    def get_row_data(self, row_index, table_name):
+        columns_info = self.db.get_table_columns(table_name)
+        column_names = [col[1] for col in columns_info]
+
+        row_data = {}
+        for col_index, col_name in enumerate(column_names):
+            item = self.tableWidget.item(row_index, col_index)
+            value = item.text() if item else ''
+
+            row_data[col_name] = value if value else None
+
+        return row_data
+
     def delete_row(self):
         for table, row in self.deleted_row:
             self.db.delete_row(table, row)
@@ -190,16 +207,32 @@ class Ui_MainWindow(object):
 
         self.new_table_row.clear()
 
-    def save(self):
-            try:
-                self.delete_row()
-                self.insert_new_row()
+    def modified_row(self):
+        for row in self.changed_rows:
+            current_data = self.get_row_data(row, self.table)
 
-                self.statusbar.setStyleSheet('color: green;')
-                self.statusbar.showMessage('Сохранено успешно', 3000)
-            except Exception as e:
-                self.statusbar.setStyleSheet('color: red;')
-                self.statusbar.showMessage('Ошибка сохранения', 3000)
+            original_data = self.original_table_info.get(row, {})
+
+            changes = {col: current_data[col] for col in current_data
+                       if str(current_data[col]) != str(original_data.get(col))}
+
+            if changes:
+                row_id = current_data['id']
+                self.db.update_row(self.table, row_id, current_data)
+
+        self.changed_rows.clear()
+
+    def save(self):
+        try:
+            self.delete_row()
+            self.insert_new_row()
+            self.modified_row()
+
+            self.statusbar.setStyleSheet('color: green;')
+            self.statusbar.showMessage('Сохранено успешно', 3000)
+        except Exception as e:
+            self.statusbar.setStyleSheet('color: red;')
+            self.statusbar.showMessage('Ошибка сохранения', 3000)
 
 
 if __name__ == "__main__":
