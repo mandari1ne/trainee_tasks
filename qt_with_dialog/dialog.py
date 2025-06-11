@@ -68,7 +68,11 @@ class Ui_Dialog(QtWidgets.QDialog):
             name_label.setStyleSheet("font-size: 16px;")
             name_label.setFixedWidth(120)
 
-            line_edit = QtWidgets.QLineEdit(str(value), self)
+            if not value:
+                line_edit = QtWidgets.QLineEdit('', self)
+            else:
+                line_edit = QtWidgets.QLineEdit(str(value), self)
+
             line_edit.setStyleSheet('font-size: 16px;')
 
             if col_name.lower() == 'id':
@@ -124,6 +128,10 @@ class Ui_Dialog(QtWidgets.QDialog):
             col_name = col[1]
             col_type = col[2].upper()
             is_nullable = not col[3]
+            is_pk = col[5]
+
+            if is_pk:
+                continue
 
             value = row_data.get(col_name)
 

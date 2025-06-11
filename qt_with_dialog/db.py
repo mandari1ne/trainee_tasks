@@ -72,3 +72,11 @@ class DB:
                 processed_data.append(tuple(new_row))
 
             return processed_data
+
+    def delete_row(self, table_name, row_id):
+        with self.connection:
+            self.connection.execute(f'''
+                   DELETE FROM {table_name} WHERE id = ?
+               ''', (row_id,))
+
+            self.connection.commit()

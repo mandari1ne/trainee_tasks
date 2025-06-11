@@ -39,6 +39,7 @@ class Ui_MainWindow(object):
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setStyleSheet("font-size: 22px;")
         self.pushButton.setObjectName("pushButton")
+        self.pushButton.clicked.connect(self.save)
         self.horizontalLayout.addWidget(self.pushButton)
 
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
@@ -83,7 +84,7 @@ class Ui_MainWindow(object):
         self.pushButton_3.setText(_translate("MainWindow", "Delete"))
         self.pushButton_4.setText(_translate("MainWindow", "Reset"))
 
-    def get_table_info(self,  table_name, db_):
+    def get_table_info(self, table_name, db_):
         self.table = table_name
         self.db = db_
 
@@ -151,8 +152,6 @@ class Ui_MainWindow(object):
         columns_info = self.db.get_table_columns(self.table)
         column_names = [col[1] for col in columns_info]
 
-        # fk_info = self.db.get_table_fk(self.table)
-
         for col_index, col_name in enumerate(column_names):
             item = self.tableWidget.item(row, col_index)
             value = item.text() if item else ''
@@ -166,13 +165,27 @@ class Ui_MainWindow(object):
         if result:
             updated_data = dialog_.result_data
             for col_index, (col_name, value) in enumerate(updated_data.items()):
-
                 item = QtWidgets.QTableWidgetItem(str(value))
                 self.tableWidget.setItem(row, col_index, item)
+
+    def delete_row(self):
+        for table, row in self.deleted_row:
+            self.db.delete_row(table, row)
+        self.deleted_row.clear()
+
+    def save(self):
+        try:
+            self.delete_row()
+
+            self.statusbar.setStyleSheet('color: green;')
+            self.statusbar.showMessage('Сохранено успешно', 3000)
+        except Exception as e:
+            self.statusbar.showMessage('Ошибка сохранения')
 
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
 
