@@ -151,28 +151,11 @@ class Ui_MainWindow(object):
         columns_info = self.db.get_table_columns(self.table)
         column_names = [col[1] for col in columns_info]
 
-        fk_info = self.db.get_table_fk(self.table)
+        # fk_info = self.db.get_table_fk(self.table)
 
         for col_index, col_name in enumerate(column_names):
             item = self.tableWidget.item(row, col_index)
             value = item.text() if item else ''
-
-            # if col_name in fk_info:
-            #     if '-' in value:
-            #         value = value.split('-')[0]
-            #     elif value:
-            #         fk_table, fk_col = fk_info[col_name]
-            #         fk_cols = [c[1] for c in self.db.get_table_columns(fk_table)]
-            #         text_col = fk_cols[1]
-            #
-            #         result = self.db.execute(f'''
-            #             SELECT {fk_col} FROM {fk_table} WHERE {text_col} = ?
-            #         ''', (value,)).fetchone()
-            #
-            #         if result:
-            #             value = result[0]
-            #         else:
-            #             return None
 
             row_data[col_name] = value if value else None
 

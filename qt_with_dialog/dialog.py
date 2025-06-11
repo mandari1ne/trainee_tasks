@@ -100,13 +100,12 @@ class Ui_Dialog(QtWidgets.QDialog):
                     fk_cols = [c[1] for c in self.db.get_table_columns(fk_table)]
                     text_col = fk_cols[1]
 
-                    result = self.db.connection.execute(f'''
-                        SELECT {fk_col} FROM {fk_table} WHERE {text_col} = ?
-                    ''', (value_text,)).fetchone()
-
-                    if result:
+                    try:
+                        result = self.db.connection.execute(f'''
+                            SELECT {fk_col} FROM {fk_table} WHERE {text_col} = ?
+                        ''', (value_text,)).fetchone()
                         value_text = result[0]
-                    else:
+                    except TypeError:
                         self.is_error(f'Ошбика FK: {col_name} - {value_text}')
                         return None
 
@@ -155,13 +154,15 @@ class Ui_Dialog(QtWidgets.QDialog):
         return True, validated_data
 
     def accept(self):
-        is_valid, data = self.validate_data(self.get_current_data())
+        data = self.get_current_data()
+        if data:
+            is_valid, validate_data = self.validate_data(data)
 
-        if is_valid:
-            self.result_data = data
-            self.error_label.clear()
+            if is_valid:
+                self.result_data = validate_data
+                self.error_label.clear()
 
-            super().accept()
+                super().accept()
 
 
 if __name__ == "__main__":
