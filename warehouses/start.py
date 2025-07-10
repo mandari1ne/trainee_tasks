@@ -1,8 +1,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+import menu
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
+        self.window = MainWindow
+
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
         MainWindow.setStyleSheet("background-color: rgb(166, 236, 255);")
@@ -44,6 +47,8 @@ class Ui_MainWindow(object):
                                             "font-size: 20px;")
         self.pushButton_login.setObjectName("pushButton_login")
 
+        self.pushButton_login.clicked.connect(self.login)
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 18))
@@ -64,6 +69,13 @@ class Ui_MainWindow(object):
         self.label_3.setText(_translate("MainWindow", "Password"))
         self.pushButton_login.setText(_translate("MainWindow", "Вход"))
 
+    def login(self):
+        self.menu_window = QtWidgets.QMainWindow()
+        ui = menu.Ui_MainWindow()
+        ui.setupUi(self.menu_window)
+
+        self.menu_window.show()
+        self.window.close()
 
 if __name__ == "__main__":
     import sys
