@@ -71,8 +71,8 @@ class Ui_MainWindow(object):
 
     def login(self):
         self.menu_window = QtWidgets.QMainWindow()
-        ui = menu.Ui_MainWindow()
-        ui.setupUi(self.menu_window)
+        self.menu_ui = menu.Ui_MainWindow()
+        self.menu_ui.setupUi(self.menu_window)
 
         self.menu_window.show()
         self.window.close()
