@@ -1,4 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+import del_dialog
 
 
 class Ui_MainWindow(object):
@@ -35,6 +36,8 @@ class Ui_MainWindow(object):
             self.pushButton_delete.setStyleSheet("font-size: 20px;\n"
                                                  "background-color: rgb(170, 170, 255);")
             self.pushButton_delete.setObjectName("pushButton_delete")
+
+            self.pushButton_delete.clicked.connect(self.delete_record)
         else:
             self.pushButton_delete = None
 
@@ -59,6 +62,11 @@ class Ui_MainWindow(object):
 
         if self.pushButton_delete:
             self.pushButton_delete.setText(_translate("MainWindow", "Удалить"))
+
+    def delete_record(self):
+        Dialog = QtWidgets.QDialog()
+        ui = del_dialog.Ui_Dialog()
+        ui.exec_()
 
 
 if __name__ == "__main__":
