@@ -29,6 +29,15 @@ class Ui_MainWindow(object):
                                           "background-color: rgb(170, 170, 255);")
         self.pushButton_add.setObjectName("pushButton_add")
 
+        if name == 'Клиенты' or name == 'Сотрудники':
+            self.pushButton_delete = QtWidgets.QPushButton(self.centralwidget)
+            self.pushButton_delete.setGeometry(QtCore.QRect(70, 30, 111, 41))
+            self.pushButton_delete.setStyleSheet("font-size: 20px;\n"
+                                                 "background-color: rgb(170, 170, 255);")
+            self.pushButton_delete.setObjectName("pushButton_delete")
+        else:
+            self.pushButton_delete = None
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 18))
@@ -47,6 +56,9 @@ class Ui_MainWindow(object):
         # self.label.setText(_translate("MainWindow", "Склады"))
         self.label.setText(_translate("MainWindow", f"{name}"))
         self.pushButton_add.setText(_translate("MainWindow", "Добавить"))
+
+        if self.pushButton_delete:
+            self.pushButton_delete.setText(_translate("MainWindow", "Удалить"))
 
 
 if __name__ == "__main__":
